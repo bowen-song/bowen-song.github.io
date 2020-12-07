@@ -1,0 +1,537 @@
+---
+title: 'Project 1: Exploratory Data Analysis'
+author: "Bowen Song (bs37486)"
+date: '2020-10-18'
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+  pdf_document:
+    toc: no
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE, fig.align = "center", warning = F, message = F,
+tidy=TRUE, tidy.opts=list(width.cutoff=60), R.options=list(max.print=100))
+options(scipen=10000)
+```
+
+---
+
+### Setting Up
+
+```{R}
+#all packages
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+library(stringr)
+library(knitr)
+library(kableExtra)
+library(scales)
+library(cluster)
+
+#all data sources linked at the end
+#COVID-19 by county
+cvd_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 1/Project\ 1\ Datasets/us-counties.csv")
+#K-12 school district reopening plans
+kplan_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 1/Project\ 1\ Datasets/District_Reopening_Data.csv")
+#college reopening plans
+cplan_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 1/Project\ 1\ Datasets/us-college-plans.csv")
+#K-12 location by county
+kloc_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 1/Project\ 1\ Datasets/sdlist.csv")
+#college location by county
+cloc_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 1/Project\ 1\ Datasets/us-colleges-and-universities.csv")
+#mask use by county
+mask_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 1/Project\ 1\ Datasets/mask-use-by-county.csv")
+#US population by county
+countypop_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 1/Project\ 1\ Datasets/US_pop_by_county.csv")
+#US county FIPS codes
+countyfips_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 1/Project\ 1\ Datasets/co_fips.csv")
+```
+
+---
+
+### Introduction
+
+A number of the datasets I have chosen for this project contain extraneous variables that will be removed while tidying the datasets as needed. 
+
+* The `cvd` dataset is US COVID-19 data organized by county collected by the NY Times. `cvd` contains 6 variables that will all be kept: `date` (dates from 01-21-20 to 10-04-20), `county`, `state`, `fips` (every county's unique numerical identifier), `cases` (cases of COVID-19), and `deaths` (deaths to COVID-19).   
+
+* The `kplan` dataset contains information about the reopening plans of K-12 schools in the US and is provided by Education Week. Of the 8 original variables in `kplan`, only 4 are kept: `District` (district name), `State`, `StartDateK12` (official start day of school district), and `K12reopenplan` (remote, hybrid, or in-person).   
+
+* The `kloc` dataset contains information on each K-12 school district's respective location and is provided by the US Census Bureau. From `kloc` only 3 of the original 7 variables are kept: `State`, `School District Name`, and `county`.   
+
+* The `cplan` dataset contains information about the reopening plans of colleges in the US and is currently being maintained by Sina Booeshaghi and Lior Pachter at Caltech University. From `cplan`, 4 of the original 16 variables are kept: `institution` (college/university name), `rtc_model` ("return to college" plan), `LastUpdatedCol` (date last updated), and `State`.   
+
+* The `cloc` dataset contains information on each institution's respective location and is provided by Homeland Infrastructure Foundation-Level Data (HIFLD), a subcommittee of the Department of Homeland Security. From `cloc`, only 4 of the original 45 variables are kept: `Name` (college/university name), `City`, `State`, and `County`.   
+
+* To reduce possible errors while joining, `countyfips` contains the fips number for all counties and states in the US, and was compiled by Aaron King of the University of Michigan. Of the original 4 variables in `countyfips`, 3 are kept: `fips` (county unique numerical identifier), `state`, `county`.
+
+* The `countypop` dataset contains information on the population of each county from 2010-2019, and is provided by the US Census Bureau. Of the 13 original variables, only 3 are kept: `county`, `state` and `pop2019` (population).   
+
+* The `mask` dataset contains the proportion of people by `COUNTYFP` (county fips) who `always_mask`, `freq_mask`, `sometimes_mask`, `rarely_mask`, and `never_mask` when they could encounter people, and is provided by a survey conducted by Dynata for the NY Times.  
+
+Although it is undoubtedly difficult to confidently find associations or determine causality for complex issues such as the COVID-19 pandemic, from the above data I am primarily interested in determining whether there is any relationship between return to school strategies or the prevalence of mask wearing and COVID-19 cases and deaths. Based on existing public health guidelines, I am expecting to see that return to school strategies that involve in-person/hybrid plans be associated with greater counts of both cases and deaths. With regard to mask wearing, I am expecting to see that counties with higher proportions of their population saying they always mask be associated with lower counts of cases and deaths. As touched upon above, however, I am not confident in either of these predictions as this investigation does not consider the effects of many potential confounding variables. All that said, I am looking forward to seeing what the data shows!
+
+---
+
+### Tidying Datasets
+
+`cvd` needs no cleaning up:
+```{R}
+cvd <- cvd_untidy
+
+glimpse(cvd)
+```
+Cleaning `kplan`:
+```{R}
+kplan <- kplan_untidy %>% 
+  mutate(State = state.name[match(State, state.abb)], #changes state abbreviations to state name
+         StartDateK12 = as.Date(parse_date_time(`Start date`, "mdy")), #changes formatting of the date from "m/dd/yy" to "yyyy-mm-dd"
+         K12reopenplan = `District reopening plan`) %>% #rename column to remove spaces
+  select(-NCES, -Link, -`Start date`, -`Last verified`, -`District reopening plan`, -`Public School Enrollment`) #selecting columns wanted
+
+glimpse(kplan)
+```
+Cleaning `cplan`:
+```{R}
+cplan <- cplan_untidy %>% 
+  mutate(State = state.name[match(state, state.abb)], #changes state abbreviations to state name
+         LastUpdatedCol = as.Date(parse_date_time(last_updated, "mdy"))) %>% #date formatting from "m/dd/yyyy" to "yyyy-mm-dd"
+  select(institution, rtc_model, LastUpdatedCol, State) #selecting columns wanted
+
+glimpse(cplan)
+```
+Cleaning `kloc`:
+```{R}
+kloc <- kloc_untidy %>% 
+  mutate(State = state.name[match(`State Postal Code`, state.abb)]) %>% #changes state abbreviations to state name
+  select(State, `School District Name`, `County Names`) %>% #selecting columns wanted
+  separate(`County Names`, into = c("county", NA)) #drops the "County" in "_________ County"
+
+glimpse(kloc)
+```
+Cleaning `cloc`:
+```{R}
+cloc <- cloc_untidy %>% 
+  mutate(State = state.name[match(STATE, state.abb)], #changes state abbreviations to state name
+         #changes case to only first letter capitalized
+         County = str_to_title(COUNTY),
+         Name = str_to_title(NAME),
+         City = str_to_title(CITY)) %>% 
+  select(Name, City, State, County) #selecting columns wanted
+
+glimpse(cloc)
+```
+Cleaning `mask`:
+```{R}
+mask <- mask_untidy %>% 
+  #renaming variables for clarity
+  rename(never_mask = NEVER,
+         rarely_mask = RARELY,
+         sometimes_mask = SOMETIMES,
+         freq_mask = FREQUENTLY,
+         always_mask = ALWAYS)
+
+glimpse(mask)
+```
+Cleaning `countypop`:
+```{R}
+countypop <- countypop_untidy %>% 
+  slice(-1) %>% #removes the "US" row
+  select("Geographic Area", "2019") %>% #selects location + 2019 population data
+  separate("Geographic Area", into = c("county", "state"), sep = ",") %>% #separates location into county/state
+  separate(county, into = c("county", NA), sep = " ") %>% #drops the "County" in "_________ County"
+  mutate(county = str_replace(county, ".", ""), #drops the "." in front of county names
+         pop2019 = as.numeric(`2019`), #renames population
+         state = trimws(state)) %>%  #removes spaces in front of state
+  select(-`2019`)
+
+glimpse(countypop)
+```
+Cleaning `countyfips`:
+```{R}
+countyfips <- countyfips_untidy %>% 
+  select(-stateiso) %>%  #removes state code
+  separate(county, into = c("county", NA), sep = " ") #drops the "County" in "_________ County"
+
+glimpse(countyfips)
+```
+
+---
+
+### Joining Data
+
+```{R}
+#join countypop to countyfips by county
+countyfipspop <- countyfips %>%
+  #left join because we only want population data on counties for which we have the fips identifier
+  left_join(countypop, by = c("county", "state")) 
+
+#join K-12 plans to K-12 locations by name of district
+kplanloc <- kplan %>% 
+  #inner join because we only want rows in which we have data on both K-12 location and reopening plan
+  #we shouldn't lose any data from kplan as kloc should contain information on every US school district
+  inner_join(kloc, by = c("District" = "School District Name", "State")) 
+
+#join countyfips to kplanloc
+kplanloc <- countyfipspop %>% 
+  #inner join because because we only want rows in which we have data on both county and K-12 plans/locations
+  #we shouldn't lose any data from kplanloc as countyfipspop should contain the fips codes for every US county
+  inner_join(kplanloc, by = c("county", "state" = "State")) 
+
+#join college plans to college locations by name of college
+cplanloc <- cplan %>% 
+  #inner join because we only want rows in which we have data on both college location and reopening plan
+  #we shouldn't lose any data from cplan as cloc should contain information on every US college
+  inner_join(cloc, by = c("institution" = "Name", "State")) 
+
+#join countyfips to cplanloc
+cplanloc <- countyfipspop %>% 
+  #inner join because because we only want rows in which we have data on both county and college plans/locations
+  #we shouldn't lose any data from cplanloc as countyfipspop should contain the fips codes for every US county
+  inner_join(cplanloc, by = c("county" = "County", "state" = "State")) 
+
+#join mask to covid cases by FIPS
+maskcvd <- cvd %>% 
+  #left join here because we don't want to lose any rows from `cvd` even if `mask` is missing points
+  left_join(mask, by = c("fips" = "COUNTYFP")) 
+
+#join all to `maskcvd` by county
+fulldata <- maskcvd %>% 
+  #full join because we want to keep as many data points as possible at this point
+  #sort out and deal with NAs in later steps depending on investigation of interest
+  full_join(kplanloc, by = c("fips", "county", "state")) %>% 
+  full_join(cplanloc, by = c("fips", "county", "state")) %>% 
+  #creates a new column that condenses duplicate columns from joins
+  mutate(pop2019 = coalesce(pop2019.x, pop2019.y)) %>% 
+  select(-pop2019.x, -pop2019.y) #removes the duplicate columns
+
+glimpse(fulldata)
+```
+
+Cleaning fulldata and creating fulldataprior:
+```{R}
+fulldata <- fulldata %>% 
+  #renaming return to school models to equate K-12 plans with college plans
+  mutate(K12reopenplan = str_replace(K12reopenplan, ".*Hybrid.*", "hybrid"),
+         K12reopenplan = str_replace(K12reopenplan, ".*Remote.*", "remote"),
+         K12reopenplan = str_replace(K12reopenplan, ".*in-person.*", "in person"),
+         rtc_model = str_replace(rtc_model, ".*in-person.*", "in person"),
+         rtc_model = str_replace(rtc_model, ".*hybrid.*", "hybrid"),
+         rtc_model = str_replace(rtc_model, ".*online.*", "remote"),
+         #as the following are undefined, "Considering a range of scenarios" and "Waiting to decide" are omitted
+         rtc_model = na_if(rtc_model, "Considering a range of scenarios"),
+         rtc_model = na_if(rtc_model, "Waiting to decide")) %>% 
+  select(county, state, cases, deaths, District, K12reopenplan, institution, rtc_model, pop2019, everything()) #selecting columns wanted
+
+fulldataprior <- fulldata #creates a dataset that will be later modified to consist of dates prior to school start
+```
+
+Now that the data is finally all combined, the next step is to determine which `date`s to focus on for this investigation:
+```{R}
+#on average, schools start on this date
+fulldata %>%
+  summarize(MeanDate = mean.Date(c(StartDateK12, LastUpdatedCol), na.rm = T)) #finds "average" start date
+
+#filtering all dates between 8-18 and 10-04
+#8-18 is mean start date, and 10-04 was the most recent date available at the time of this investigation
+#total of 48 days
+fulldata <- fulldata %>% 
+  filter(date >= as.Date("2020-08-18") & date <= as.Date("2020-10-04"))
+
+#filtering all dates between 6-30 and 8-17
+#filter dates 48 days prior to start of school for comparison
+fulldataprior <- fulldataprior %>% 
+  filter(date < as.Date("2020-08-17") & date >= as.Date("2020-06-30"))
+
+#removes NAs where there is no district or institution data
+#aka, extra mask data
+fulldata <- fulldata[!(is.na(fulldata$District)) | !(is.na(fulldata$institution)),]
+fulldataprior <- fulldataprior[!(is.na(fulldataprior$District)) | !(is.na(fulldataprior$institution)),]
+```
+
+Creates a new column that combines overall reopening plans. Format of observations after unite: **"collegeplan_K12plan"**
+```{R}
+#creates new column for fulldata
+fulldata <- fulldata %>% 
+  unite(rtc_model, K12reopenplan, col = "cK12plans", sep = "_", remove = F)
+#creates new column for fulldataprior
+fulldataprior <- fulldataprior %>% 
+  unite(rtc_model, K12reopenplan, col = "cK12plans", sep = "_", remove = F)
+```
+
+Creates new columns for cases and deaths per 1,000 people. Scaling the cases and deaths by population should lead to a better representation of the effect of reopening plans on case/death count than doing a direct comparison.
+```{R}
+#cases and deaths/1,000 after school start
+fulldata <- fulldata %>% 
+  mutate(casespercap = (cases/pop2019)*1000,
+         deathspercap = (deaths/pop2019)*1000)
+#cases and deaths/1,000 before school start
+fulldataprior <- fulldataprior %>% 
+  mutate(casespercap = (cases/pop2019)*1000,
+         deathspercap = (deaths/pop2019)*1000)
+
+#final data
+glimpse(fulldata)
+glimpse(fulldataprior)
+```
+
+---
+
+### Visualizing by `cK12plan`
+#### barplot of average cases/deaths
+```{R}
+#mean cases and deaths per capita by plan visualized in faceted bar plot
+fulldata %>% 
+  group_by(cK12plans) %>%
+  #removing rows in which data is missing for either college plan or K-12 plan
+  #might result in a less representative sample, but is the only way to make sure data is complete
+  filter(!str_detect(cK12plans, ".*NA.*")) %>% 
+  summarize_at(vars(deathspercap, casespercap),
+               list(mean = mean,
+                    med = median,
+                    sd = sd,
+                    count = length)) %>% 
+  #creating column for standard errors
+  mutate(deathspercap_se = deathspercap_sd/sqrt(deathspercap_count),
+            casespercap_se = casespercap_sd/sqrt(casespercap_count)) %>% 
+  #rearranging data
+  pivot_longer(-1) %>% 
+  separate(name, into = c("variable", "stat")) %>% 
+  pivot_wider(names_from = "stat", values_from = "value") %>% 
+  #creating faceted barplot by plan
+  ggplot(aes(variable, mean, fill = variable))+
+    geom_bar(stat="summary", position="dodge")+
+    facet_wrap(~cK12plans)+
+    geom_errorbar(aes(y=mean, ymin=mean-se, ymax=mean+se), width=.5)+
+    labs(x = "", title = "Mean Cases/Deaths by Return to School Plan", 
+         subtitle = "Represented by average cases/deaths per 1,000 people")+
+    scale_fill_brewer(palette = "Dark2")+
+    theme(plot.title = element_text(face = "bold"))
+```
+From this plot, it appears that my initial assumptions about reopening plans were only partially true. Looking first at the `casespercap` variable, it seems that plans which involve returning to school in-person (either fully, or partially) result in a greater number of cases of COVID-19. Sticking out like a sore thumb, it is apparent that locations in which both colleges and K-12 schools conducting in-person education have the greatest count of cases of COVID-19 (represented by `in person_in person`). This result makes sense; increasing the amount of person to person contact during a pandemic is sure to result in greater spread. 
+
+What's interesting, however, is that though the case counts are pretty clearly differently by reopening plan, the same cannot be said for death counts, which seem to be very similar regardless of reopening plan. This result doesn't make sense; the logical assumption would be that case counts and death counts be proportional to one another (as case counts go up, so too do death counts), but this is simply not the case here. These unexpected results could be due to a wide variety of extraneous variables not considered here. For example, maybe there are disparities in healthcare that result in differing mortality rates by location. Or maybe most of the people getting sick are young and healthy, and as such are at lower risk of dying. Whatever the case may be, it's great to see that even though cases may be greater for schools reopening in-person, the deaths are not also greater.
+
+---
+
+### Summary Stats by `cK12plan`
+
+```{R}
+#cases and deaths per capita by plan visualized in a table
+fulldata %>% 
+  group_by(cK12plans) %>%
+  filter(!str_detect(cK12plans, ".*NA.*")) %>% 
+  summarize_at(vars(deathspercap, casespercap),
+               list(mean = mean,
+                    med = median,
+                    sd = sd)) %>% 
+  pivot_longer(-1) %>% 
+  separate(name, into = c("variable", "stat")) %>% 
+  pivot_wider(names_from = "stat", values_from = "value") %>% 
+  arrange(-mean) %>% #arrange by mean in descending order
+  select(variable, cK12plans, everything()) %>% #rearranging columns
+  kbl(caption = "Summary Statistics by Reopening Plan") %>% 
+  kable_classic_2("striped", html_font = "Cambria") %>% 
+  footnote(general = "Represented by stats of cases/deaths per 1,000 people")
+```
+This table takes the same numbers used in the faceted barplot and arranges them in descending order of mean `casespercap` and `deathspercap`. From here, we can confirm that in person returns to school do indeed result in greater numbers of cases, but not necessarily deaths. Importantly, this table also shows us that for a number of school reopening plans, the standard deviations are quite large, which, in this case, could be an indicator of large fluctuations in `casespercap` and `deathspercap` between counties.
+
+---
+
+### Cumulative `cases`/`deaths` 
+#### Between 06/30/2020 and 10/04/2020 
+
+```{R}
+fulldata %>% 
+  full_join(fulldataprior) %>% 
+  group_by(date) %>% 
+  #finding the sum of cases/deaths by date
+  summarize_at(vars(casespercap, deathspercap),
+               list(sum = sum)) %>% 
+  #rearranging for ease of plotting
+  pivot_longer(-1, names_to="variable", values_to="Total Affected") %>%
+  ggplot(aes(x=date))+
+    geom_area(aes(y=`Total Affected`, fill=factor(variable, labels = c("cases", "deaths"))))+
+    geom_vline(aes(xintercept = as.Date("2020-08-18")), color = "red", linetype = "dashed", size = 1)+
+    geom_label(aes(x=as.Date("2020-08-07"), label = "School Start\n Aug-18", y=15000), text=element_text(size=11))+
+    #increasing number of breaks on x axis
+    scale_x_date(date_breaks = '2 weeks',
+                 labels = date_format('%b-%d'))+
+    #increasing number of breaks on y axis
+    scale_y_continuous(breaks = seq(0, 20000, by = 2500))+
+    #angle of x labels adjusted
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+    #changing labels, adding titles
+    labs(x = "",
+         y = "Total Affected",
+         title = "Cases and Deaths Over Time",
+         subtitle = "Total Affected: represented by sum of cases/deaths per 1,000 people",
+         fill = 'Legend')+
+    theme(plot.title = element_text(face = "bold"))+
+    #changing colors of fill
+    scale_fill_manual(values = c("cadetblue", "black"))+
+    #adding points for first, school start, and last days totals
+    geom_point(x = as.Date("2020-08-18"), y = 12080.2208, color = "yellow")+
+    geom_point(x = as.Date("2020-06-30"), y = 7151.6144, color = "yellow")+
+    geom_point(x = as.Date("2020-10-04"), y = 17111.8879, color = "yellow")+
+    annotate("text", x = as.Date("2020-07-04"), y = 6900, label = "7152", color = "white", size = 3.5)+
+    annotate("text", x = as.Date("2020-08-23"), y = 11900, label = "12080", color = "white", size = 3.5)+
+    annotate("text", x = as.Date("2020-09-29"), y = 17400, label = "17112", color = "black", size = 3.5)+
+    #adding points for first school start, and last days deaths
+    geom_point(x = as.Date("2020-06-30"), y = 322.2928, color = "yellow")+
+    geom_point(x = as.Date("2020-08-18"), y = 387.9071, color = "yellow")+
+    geom_point(x = as.Date("2020-10-04"), y = 461.4253, color = "yellow")+
+    annotate("text", x = as.Date("2020-07-03"), y = 700, label = "322", color = "white", size = 3.5)+
+    annotate("text", x = as.Date("2020-08-21"), y = 750, label = "389", color = "white", size = 3.5)+
+    annotate("text", x = as.Date("2020-10-01"), y = 800, label = "461", color = "white", size = 3.5)
+```
+This plot reinforces the conclusions drawn from the barplots faceted by school reopening plans; cases are on the rise, and thankfully, the deaths are not rising at a similar rate. It's interesting, also, to see that the number of cases and deaths has not skyrocketed since the reopening of schools. There is an overall increase in the number of cases by ~100 over time (~4900 between June 30th and Aug 17th, and ~5000 between Aug 18th and Oct 4th), but as before, there are a number of other reasons this may be the case. For example, perhaps the increase in cases over time could instead be attributed to the colder weather moving in - one could maybe study these same data by region to figure out if this is the case. There was also an overall increase in the number of deaths by 5 over time (67 between June 30th and Aug 17th, and 72 between Aug 18th and Oct 4th). The fact that deaths are not directly rising with cases at a similar rate could potentially be explained by advances in the way that we treat COVID-19, including, but not limited to things like steroid treatment or anticoagulants. Finally, and very importantly, it's important to note that this data represents only the counties in which school reopening data was available, and it may or may not be representative of the US on a broader scale.
+
+---
+
+### Correlation Matrix
+
+Here's our first look at how masks may be associated with COVID-19 cases and deaths:
+```{R}
+#creating correlation matrix
+fulldatacormat <- fulldata %>%
+  select_if(is.numeric) %>% 
+  scale() %>% 
+  cor(use = "pair") %>% 
+  as.data.frame() %>% 
+  rownames_to_column("var1") %>% 
+  pivot_longer(-1, names_to = "var2", values_to = "correlation")
+
+#plotting correlation matrix
+fulldatacormat %>% 
+  ggplot(aes(x = factor(var1, levels = c("cases", "casespercap", "deaths", "deathspercap", "pop2019", "always_mask", "freq_mask", "sometimes_mask", "rarely_mask", "never_mask")), 
+             y = factor(var2, levels = c("cases", "casespercap", "deaths", "deathspercap", "pop2019", "always_mask", "freq_mask", "sometimes_mask", "rarely_mask", "never_mask")), 
+             fill = correlation)) +
+    geom_tile() +
+    scale_fill_gradient2(low = "red", mid = "white", high = "blue") +
+    geom_text(aes(label=round(correlation,2)),color = "black", size = 2) +
+    theme(axis.text.x = element_text(angle = 60, hjust = 1)) +
+    coord_fixed() +
+    labs(x = "",
+         y = "",
+         title = "Correlation Matrix",
+         subtitle = "Data: numerics from fulldata")+
+    theme(plot.title = element_text(face = "bold", size = 10),
+          plot.subtitle = element_text(size = 7))
+
+```
+Based on this data, there's little in the way of unexpected significant correlations:
+
+* `cases`/`casespercap` and `deaths`/`deathspercap` are strongly positively correlated, as expected.
+
+* `cases`/`deaths` and `casespercap`/`deathspercap` show only a very, very weak correlation, as expected (locations with larger populations will likely have higher case/death counts, but not necessarily higher cases/deaths per capita). This is also verified by the strong correlation between `pop2019` and `cases`/`deaths`, and the negligible correlation between `pop2019` and `casespercap`/`deathspercap`.
+
+* `always_mask` is moderately to strongly negatively correlated with `freq_mask`, `sometimes_mask`, `rarely_mask`, and `never_mask`, as expected.
+
+One standout is, very surprisingly, the mask data in relation to `cases`/`deaths` and `casespercap`/`deathspercap`:
+
+* `always_mask` appears to have a weak-low *positive* correlation with `cases`/`deaths` and `casespercap`/`deathspercap`, and vice versa for `freq_mask`, `sometimes_mask`, `rarely_mask`, and `never_mask`. This is completely unexpected as one would expect that if a greater proportion of the population always wears masks, there be lower counts of `cases`/`deaths` and `casespercap`/`deathspercap`. 
+
+That being said, like before, there are many other variables that could have played a role in these results. For example, `always_mask` and `pop2019` also exhibit a low-moderate positive correlation, and the results could be due to the fact that COVID-19 is harder to contain in densely populated areas, despite prevalent mask wearing. It's also important to note that the NY Times reported several states implementing mask mandates after the survey results were published and as such, the above data may no longer be an accurate representation of the masking situation in each county.
+
+---
+
+### PAM Clustering
+
+Let's see if we can potentially visualize the interaction between masks and cases/deaths a little better via PAM clustering by `cases`, `deaths`, and `pop2019`.
+```{R}
+#step 1: selecting data
+#no scale because selected columns all measure counts of people
+clust_dat <- fulldata %>% 
+  #selecting data from only one day makes the clustering plot easier to read
+  #may result in missing out on spikes/dips on certain days
+  #will likely result in a less representative sample
+  filter(date == as.Date("2020-10-04")) %>% 
+  select(cases, deaths, pop2019) %>% 
+  distinct(cases, deaths, .keep_all = T)
+
+#step 2: creating silhouette plot to determine number of clusters
+sil_width <- vector()
+
+for(i in 2:10){ 
+ pam_fit  <-  pam(clust_dat, k =  i) 
+ sil_width[i]  <-  pam_fit$silinfo$avg.width 
+}
+
+ggplot() + 
+  geom_line(aes(x = 1:10, y = sil_width)) + 
+  scale_x_continuous(name = "k", breaks = 1:10)
+```
+The silhouette plot indicates that two clusters should be chosen.
+```{R}
+#step 3: running PAM clustering analysis on 2 clusters
+pam1 <- clust_dat %>% 
+  pam(k=2)
+
+#step 4: visualizing clusters
+pamclust <- clust_dat %>% 
+  mutate(cluster=as.factor(pam1$clustering)) #save the cluster solution in dataset
+
+pamclust %>%
+  left_join(fulldata) %>% #join with original data
+  mutate(always_maskgreater = always_mask > .7) %>% 
+  ggplot(aes(cases, deaths, color = always_maskgreater, shape = cluster))+
+    geom_point()+
+    scale_x_log10()+
+    scale_y_log10()+
+    labs(color = "always_mask > 70%",
+         title = "PAM",
+         subtitle = "Clustered by: cases, deaths, population")+
+    theme(plot.title = element_text(face = "bold"))
+```
+For the purposes of creating this plot, an `always_mask` proportion of greater than .7 was arbitrarily chosen as a relatively high proportion of always masking. The PAM clustering analysis appears to verify the correlations that we observed through the correlation matrix. Visually, the clusters do not appear to be very distinct, but it is clear that there are more blue triangles than dots, and more blue color as cases and deaths increase. This would in turn suggest that greater amounts of mask wearing actually correlates to greater counts of cases and deaths! 
+
+**It is certainly worth mentioning that this data represents a small subset of the population and should most certainly NOT be taken as a recommendation to not mask up and/or follow the appropriate guidelines from health officials.**
+```{R}
+#step 5: interpreting silhouette plot
+plot(pam1, which = 2)
+```
+For some reason, the plot isn't displaying the bars. Regardless, because the average silhouette width is greater than .71 at .72, this plot indicates that a strong structure is found (strong goodness-of-fit), and as such, the clusters are sufficiently different between one another and similar within themselves.
+
+```{R}
+#separate visualization of the bars of silhouette plot
+pam1$silinfo$widths %>%  as.data.frame %>% 
+  mutate(x=n():1) %>% 
+  ggplot(aes(x, y=sil_width, fill=as.factor(cluster))) + 
+  geom_bar(stat="identity") + 
+  xlab("") +
+  facet_grid(cluster~., scales="free_y") + 
+  coord_flip() + 
+  theme(legend.position="none")
+```
+
+---
+
+### Links to Datasets
+
+* COVID-19 by county: [`cvd_untidy`](https://github.com/nytimes/covid-19-data/blob/63d02b9d1073eff62827daf155a4fe1ef4ab7188/us-counties.csv) 
+
+* K-12 school district reopening plans: [`kplan_untidy`](https://www.edweek.org/ew/section/multimedia/school-districts-reopening-plans-a-snapshot.html) 
+* College reopening plans: [`cplan_untidy`](https://docs.google.com/spreadsheets/d/10I8bVkLzvrmXJsb5N-8JSFpWw5vBwDKYzyOVAI4viKo/edit#gid=1514440859)
+
+* K-12 location by county (2019 data): [`kloc_untidy`](https://www.census.gov/programs-surveys/saipe/guidance-geographies/districts-counties.html)
+
+* College location by county: [`cloc_untidy`](https://public-us.opendatasoft.com/explore/dataset/us-colleges-and-universities/export/?sort=population) 
+
+* Mask use by county: [`mask_untidy`](https://github.com/nytimes/covid-19-data/commit/bde13b021e99c6b4a63fb66a6144e889cc635e31) 
+
+* US population by county (US data): [`countypop_untidy`](https://www.census.gov/data/datasets/time-series/demo/popest/2010s-counties-total.html) 
+
+* County fips codes: [`countyfips_untidy`](https://github.com/nytimes/covid-19-data/blob/63d02b9d1073eff62827daf155a4fe1ef4ab7188/co_fips.csv) 
+
+```{R, echo=F}
+sessionInfo()
+Sys.time()
+Sys.info()
+```

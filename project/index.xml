@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Projects on Chris Turner</title>
+    <link>/project/</link>
+    <description>Recent content in Projects on Chris Turner</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-US</language>
+    <lastBuildDate>Tue, 24 Nov 2020 00:00:00 +0000</lastBuildDate><atom:link href="/project/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Project 2: Modeling, Testing, and Predicting</title>
+      <link>/project/project2/</link>
+      <pubDate>Tue, 24 Nov 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/project/project2/</guid>
+      <description>Setting Up # all data sources linked at the end election results by # county elect_untidy &amp;lt;- read_csv(&amp;quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 2/Datasets/presidential.csv&amp;quot;) # COVID-19 by county cvd_untidy &amp;lt;- read_csv(&amp;quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 2/Datasets/us-counties.csv&amp;quot;) # mask use by county mask_untidy &amp;lt;- read_csv(&amp;quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 2/Datasets/mask-use-by-county.csv&amp;quot;) # educational attainment by county data should discretized # into dominant educational level by county education_untidy &amp;lt;- read_csv(&amp;quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 2/Datasets/Education.csv&amp;quot;) # population data by county popdata_untidy &amp;lt;- read_csv(&amp;quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 2/Datasets/PopulationEstimates.</description>
+    </item>
+    
+    <item>
+      <title>Project 1: Exploratory Data Analysis</title>
+      <link>/project/project1/</link>
+      <pubDate>Sun, 18 Oct 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/project/project1/</guid>
+      <description>Setting Up # all packages library(tidyverse) library(ggplot2) library(lubridate) library(stringr) library(knitr) library(kableExtra) library(scales) library(cluster) # all data sources linked at the end COVID-19 by county cvd_untidy &amp;lt;- read_csv(&amp;quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 1/Project 1 Datasets/us-counties.csv&amp;quot;) # K-12 school district reopening plans kplan_untidy &amp;lt;- read_csv(&amp;quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 1/Project 1 Datasets/District_Reopening_Data.csv&amp;quot;) # college reopening plans cplan_untidy &amp;lt;- read_csv(&amp;quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 1/Project 1 Datasets/us-college-plans.csv&amp;quot;) # K-12 location by county kloc_untidy &amp;lt;- read_csv(&amp;quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 1/Project 1 Datasets/sdlist.</description>
+    </item>
+    
+  </channel>
+</rss>
