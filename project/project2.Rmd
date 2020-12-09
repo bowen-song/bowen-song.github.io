@@ -395,7 +395,9 @@ plot(linearfit$fitted.values, linearfit$residuals); abline(h = 0, col = "red")
 #fails this assumption, the data is not homoscedastic
 bptest(linearfit)
 ```
-Based on the results of these tests and visualizations, this data is non-linear, not normally distributed, and not homoscedastic. As such, we'll run a linear regression with robust standard errors.
+Based on the results of these tests and visualizations, this data is non-linear, not normally distributed, and not homoscedastic. As such, we'll run a linear regression with robust and bootstrapped standard errors.
+
+---
 
 #### Running linear regression with robust standard errors
 
@@ -559,6 +561,8 @@ __General AUC Interpretations__
 
 </center>
 
+---
+
 ### Logistic regression `fulldata`
 #### Predicting `trumpwin` from all variables; main effects only
 
@@ -603,6 +607,8 @@ class_diag(logisticfit2probs, fulldata$trumpwin)
   - $\frac{TruePos}{PredPos}$
 
 - **AUC (area under the curve)**: A way to quantify how well the model predicts outcomes overall - this quantification is based on a summarization of the trade-off between TPR and TNR, sensitivity and specificity, respectively. This model's AUC is .923, which falls into the "great" classification.
+
+---
 
 #### 10-fold cross-validation on `logisticfit2`
 
@@ -654,6 +660,8 @@ summarize_all(fd2diags, mean)
   - $\frac{TruePos}{PredPos}$
 
 - **AUC (area under the curve)**: Out of sample, this model's AUC is .916, which still falls into the "great" classification. (in sample: .923)
+
+---
 
 #### LASSO to choose a simpler model
 ##### May lead to better predictions out-of-sample

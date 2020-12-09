@@ -554,7 +554,8 @@ bptest(linearfit)</code></pre>
 ## 
 ## data:  linearfit
 ## BP = 772.68, df = 3, p-value &lt; 2.2e-16</code></pre>
-<p>Based on the results of these tests and visualizations, this data is non-linear, not normally distributed, and not homoscedastic. As such, we’ll run a linear regression with robust standard errors.</p>
+<p>Based on the results of these tests and visualizations, this data is non-linear, not normally distributed, and not homoscedastic. As such, we’ll run a linear regression with robust and bootstrapped standard errors.</p>
+<hr />
 </div>
 <div id="running-linear-regression-with-robust-standard-errors" class="section level4">
 <h4>Running linear regression with robust standard errors</h4>
@@ -598,7 +599,7 @@ coeftest(linearfit, vcov = vcovHC(linearfit))[, 1:2]</code></pre>
 <pre class="r"><code># estimated SEs by resampling rows
 row_resample %&gt;% t %&gt;% as.data.frame %&gt;% summarize_all(sd)</code></pre>
 <pre><code>##   (Intercept) trumpwin     unemp_c trumpwin:unemp_c
-## 1    15.63483 16.52776 0.004196419      0.006309339</code></pre>
+## 1    15.64243 16.59696 0.004217192      0.006397796</code></pre>
 <p>After re-running the linear regression with bootstrapped standard errors (determined by resampling rows), the <code>(Intercept)</code> and <code>unemp</code>loyment estimates remain significant, but we cannot conclusively say whether <code>trumpwin</code> and the interaction between <code>trumpwin</code> and <code>unemp</code> are significant based on our bootstrapped model.</p>
 <p>As a rule, smaller standard errors result in smaller p-values/larger t-values and larger standard errors result in larger p-values/smaller t-values. With that in mind, we can make the following comparisons:</p>
 <ul>
@@ -733,6 +734,7 @@ calc_auc(ROCplot)</code></pre>
 <p>0.6 - 0.7: Poor</p>
 <p>0.5 - 0.6: Bad</p>
 </center>
+<hr />
 </div>
 </div>
 <div id="logistic-regression-fulldata" class="section level3">
@@ -855,6 +857,7 @@ class_diag(logisticfit2probs, fulldata$trumpwin)</code></pre>
 </ul></li>
 <li><p><strong>AUC (area under the curve)</strong>: A way to quantify how well the model predicts outcomes overall - this quantification is based on a summarization of the trade-off between TPR and TNR, sensitivity and specificity, respectively. This model’s AUC is .923, which falls into the “great” classification.</p></li>
 </ul>
+<hr />
 </div>
 <div id="fold-cross-validation-on-logisticfit2" class="section level4">
 <h4>10-fold cross-validation on <code>logisticfit2</code></h4>
@@ -884,8 +887,8 @@ for (i in 1:k) {
 
 # finding average classification diagnostics out-of-sample
 summarize_all(fd2diags, mean)</code></pre>
-<pre><code>##       acc      sens      spec       ppv        f1       auc
-## 1 0.89752 0.9681246 0.5525351 0.9135077 0.9399589 0.9159452</code></pre>
+<pre><code>##         acc      sens      spec       ppv        f1       auc
+## 1 0.8981589 0.9677624 0.5596729 0.9145014 0.9403187 0.9140526</code></pre>
 <p><em>These classification diagnostics show how the previous model may predict observations out of sample. Across all diagnostics, the model is slightly worse at predicting out-of-sample, but not by a significant margin. Notably, the AUC only decreases from .923 to .916.</em></p>
 <ul>
 <li><p><strong>Accuracy</strong>: Out of sample, this model has an accuracy of .898, meaning 89.8% of its predictions were correct. (in sample: .901)</p>
@@ -906,6 +909,7 @@ summarize_all(fd2diags, mean)</code></pre>
 </ul></li>
 <li><p><strong>AUC (area under the curve)</strong>: Out of sample, this model’s AUC is .916, which still falls into the “great” classification. (in sample: .923)</p></li>
 </ul>
+<hr />
 </div>
 <div id="lasso-to-choose-a-simpler-model" class="section level4">
 <h4>LASSO to choose a simpler model</h4>
@@ -988,8 +992,8 @@ for (i in 1:k) {
 
 # summarizing results
 summarize_all(lassodiags, mean)</code></pre>
-<pre><code>##         acc      sens      spec       ppv        f1       auc
-## 1 0.8952661 0.9661443 0.5493438 0.9126141 0.9385671 0.9143985</code></pre>
+<pre><code>##         acc      sens      spec       ppv        f1      auc
+## 1 0.8962379 0.9670177 0.5534168 0.9130392 0.9391572 0.915224</code></pre>
 <p><em>These classification diagnostics are pretty interesting. Across all diagnostics, the model is slightly worse the original logistic regression at predicting both in- and out-of-sample, but not by a significant margin. Theoretically, because of its more conservative estimate, the LASSO model should result in improved out-of-sample predictions compared to that of the full model; while this is indeed the case here, the improvement is only marginal. Notably, when compared to the out-of-sample AUC of the full model, this AUC only improves from .9156 to .9158.</em></p>
 <ul>
 <li><p><strong>Accuracy</strong>: The LASSO model has an accuracy of .8956 out of sample, meaning 89.56% of its predictions were correct. This is lower than that of both the in- and out-of-sample full model predictions, which had accuracies of .901 and .898, respectively.</p>
@@ -1064,7 +1068,7 @@ summarize_all(lassodiags, mean)</code></pre>
 ## [61] abind_1.4-5       DBI_1.1.0         curl_4.3          R6_2.5.0         
 ## [65] utf8_1.1.4        shape_1.4.5       stringi_1.5.3     Rcpp_1.0.5       
 ## [69] vctrs_0.3.5       dbplyr_2.0.0      tidyselect_1.1.0  xfun_0.19</code></pre>
-<pre><code>## [1] &quot;2020-12-08 22:56:16 CST&quot;</code></pre>
+<pre><code>## [1] &quot;2020-12-08 23:13:03 CST&quot;</code></pre>
 <pre><code>##                                                                                           sysname 
 ##                                                                                          &quot;Darwin&quot; 
 ##                                                                                           release 
