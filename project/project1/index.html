@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="author" content="Chris Turner" />
+    <meta name="author" content="Bowen Song" />
     
     <link rel="shortcut icon" type="image/x-icon" href="/img/favicon.ico">
     <title>Project 1: Exploratory Data Analysis</title>
@@ -91,21 +91,21 @@ library(scales)
 library(cluster)
 
 # all data sources linked at the end COVID-19 by county
-cvd_untidy &lt;- read_csv(&quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 1/Project 1 Datasets/us-counties.csv&quot;)
+cvd_untidy &lt;- read_csv(&quot;us-counties.csv&quot;)
 # K-12 school district reopening plans
-kplan_untidy &lt;- read_csv(&quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 1/Project 1 Datasets/District_Reopening_Data.csv&quot;)
+kplan_untidy &lt;- read_csv(&quot;District_Reopening_Data.csv&quot;)
 # college reopening plans
-cplan_untidy &lt;- read_csv(&quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 1/Project 1 Datasets/us-college-plans.csv&quot;)
+cplan_untidy &lt;- read_csv(&quot;us-college-plans.csv&quot;)
 # K-12 location by county
-kloc_untidy &lt;- read_csv(&quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 1/Project 1 Datasets/sdlist.csv&quot;)
+kloc_untidy &lt;- read_csv(&quot;sdlist.csv&quot;)
 # college location by county
-cloc_untidy &lt;- read_csv(&quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 1/Project 1 Datasets/us-colleges-and-universities.csv&quot;)
+cloc_untidy &lt;- read_csv(&quot;us-colleges-and-universities.csv&quot;)
 # mask use by county
-mask_untidy &lt;- read_csv(&quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 1/Project 1 Datasets/mask-use-by-county.csv&quot;)
+mask_untidy &lt;- read_csv(&quot;mask-use-by-county.csv&quot;)
 # US population by county
-countypop_untidy &lt;- read_csv(&quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 1/Project 1 Datasets/US_pop_by_county.csv&quot;)
+countypop_untidy &lt;- read_csv(&quot;US_pop_by_county.csv&quot;)
 # US county FIPS codes
-countyfips_untidy &lt;- read_csv(&quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 1/Project 1 Datasets/co_fips.csv&quot;)</code></pre>
+countyfips_untidy &lt;- read_csv(&quot;co_fips.csv&quot;)</code></pre>
 <hr />
 </div>
 <div id="introduction" class="section level3">
@@ -963,7 +963,7 @@ pam1$silinfo$widths %&gt;% as.data.frame %&gt;% mutate(x = n():1) %&gt;%
 ## [45] magrittr_2.0.1     crayon_1.3.4       pkgconfig_2.0.3    ellipsis_0.3.1    
 ## [49] xml2_1.3.2         reprex_0.3.0       assertthat_0.2.1   rmarkdown_2.5     
 ## [53] httr_1.4.2         rstudioapi_0.13    R6_2.5.0           compiler_4.0.3</code></pre>
-<pre><code>## [1] &quot;2020-12-07 14:44:55 CST&quot;</code></pre>
+<pre><code>## [1] &quot;2020-12-08 22:54:42 CST&quot;</code></pre>
 <pre><code>##                                                                                           sysname 
 ##                                                                                          &quot;Darwin&quot; 
 ##                                                                                           release 

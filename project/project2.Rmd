@@ -61,26 +61,26 @@ knitr::opts_chunk$set(echo = TRUE, eval = TRUE,fig.align="center",warning=FALSE,
 ```{R}
 # all data sources linked at the end
 #election results by county
-elect_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 2/Datasets/presidential.csv")
+elect_untidy <- read_csv("presidential.csv")
 
 #COVID-19 by county
-cvd_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 2/Datasets/us-counties.csv")
+cvd_untidy <- read_csv("us-counties2.csv")
 
 #mask use by county
-mask_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 2/Datasets/mask-use-by-county.csv")
+mask_untidy <- read_csv("mask-use-by-county2.csv")
 
 #educational attainment by county
 #data should discretized into dominant educational level by county
-education_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 2/Datasets/Education.csv")
+education_untidy <- read_csv("Education.csv")
 
 #population data by county
-popdata_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 2/Datasets/PopulationEstimates.csv")
+popdata_untidy <- read_csv("PopulationEstimates.csv")
 
 #poverty estimates by county
-povdata_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 2/Datasets/PovertyEstimates.csv")
+povdata_untidy <- read_csv("PovertyEstimates.csv")
 
 #unemployment data and household income estimates by county
-unemp_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 2/Datasets/Unemployment.csv")
+unemp_untidy <- read_csv("Unemployment.csv")
 
 ```
 

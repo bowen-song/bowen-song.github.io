@@ -36,21 +36,21 @@ library(cluster)
 
 #all data sources linked at the end
 #COVID-19 by county
-cvd_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 1/Project\ 1\ Datasets/us-counties.csv")
+cvd_untidy <- read_csv("us-counties.csv")
 #K-12 school district reopening plans
-kplan_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 1/Project\ 1\ Datasets/District_Reopening_Data.csv")
+kplan_untidy <- read_csv("District_Reopening_Data.csv")
 #college reopening plans
-cplan_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 1/Project\ 1\ Datasets/us-college-plans.csv")
+cplan_untidy <- read_csv("us-college-plans.csv")
 #K-12 location by county
-kloc_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 1/Project\ 1\ Datasets/sdlist.csv")
+kloc_untidy <- read_csv("sdlist.csv")
 #college location by county
-cloc_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 1/Project\ 1\ Datasets/us-colleges-and-universities.csv")
+cloc_untidy <- read_csv("us-colleges-and-universities.csv")
 #mask use by county
-mask_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 1/Project\ 1\ Datasets/mask-use-by-county.csv")
+mask_untidy <- read_csv("mask-use-by-county.csv")
 #US population by county
-countypop_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 1/Project\ 1\ Datasets/US_pop_by_county.csv")
+countypop_untidy <- read_csv("US_pop_by_county.csv")
 #US county FIPS codes
-countyfips_untidy <- read_csv("/Users/Bowen/Desktop/Work/College/YEAR\ 4/Semester\ 1/Computational\ Bio/Projects/Project\ 1/Project\ 1\ Datasets/co_fips.csv")
+countyfips_untidy <- read_csv("co_fips.csv")
 ```
 
 ---

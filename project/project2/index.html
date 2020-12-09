@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="author" content="Chris Turner" />
+    <meta name="author" content="Bowen Song" />
     
     <link rel="shortcut icon" type="image/x-icon" href="/img/favicon.ico">
     <title>Project 2: Modeling, Testing, and Predicting</title>
@@ -80,26 +80,26 @@
 <h3>Setting Up</h3>
 <pre class="r"><code># all data sources linked at the end election results by
 # county
-elect_untidy &lt;- read_csv(&quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 2/Datasets/presidential.csv&quot;)
+elect_untidy &lt;- read_csv(&quot;presidential.csv&quot;)
 
 # COVID-19 by county
-cvd_untidy &lt;- read_csv(&quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 2/Datasets/us-counties.csv&quot;)
+cvd_untidy &lt;- read_csv(&quot;us-counties2.csv&quot;)
 
 # mask use by county
-mask_untidy &lt;- read_csv(&quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 2/Datasets/mask-use-by-county.csv&quot;)
+mask_untidy &lt;- read_csv(&quot;mask-use-by-county2.csv&quot;)
 
 # educational attainment by county data should discretized
 # into dominant educational level by county
-education_untidy &lt;- read_csv(&quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 2/Datasets/Education.csv&quot;)
+education_untidy &lt;- read_csv(&quot;Education.csv&quot;)
 
 # population data by county
-popdata_untidy &lt;- read_csv(&quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 2/Datasets/PopulationEstimates.csv&quot;)
+popdata_untidy &lt;- read_csv(&quot;PopulationEstimates.csv&quot;)
 
 # poverty estimates by county
-povdata_untidy &lt;- read_csv(&quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 2/Datasets/PovertyEstimates.csv&quot;)
+povdata_untidy &lt;- read_csv(&quot;PovertyEstimates.csv&quot;)
 
 # unemployment data and household income estimates by county
-unemp_untidy &lt;- read_csv(&quot;/Users/Bowen/Desktop/Work/College/YEAR 4/Semester 1/Computational Bio/Projects/Project 2/Datasets/Unemployment.csv&quot;)</code></pre>
+unemp_untidy &lt;- read_csv(&quot;Unemployment.csv&quot;)</code></pre>
 <hr />
 </div>
 <div id="introduction" class="section level3">
@@ -598,7 +598,7 @@ coeftest(linearfit, vcov = vcovHC(linearfit))[, 1:2]</code></pre>
 <pre class="r"><code># estimated SEs by resampling rows
 row_resample %&gt;% t %&gt;% as.data.frame %&gt;% summarize_all(sd)</code></pre>
 <pre><code>##   (Intercept) trumpwin     unemp_c trumpwin:unemp_c
-## 1    15.62651 16.42844 0.004173605      0.006370631</code></pre>
+## 1    15.63483 16.52776 0.004196419      0.006309339</code></pre>
 <p>After re-running the linear regression with bootstrapped standard errors (determined by resampling rows), the <code>(Intercept)</code> and <code>unemp</code>loyment estimates remain significant, but we cannot conclusively say whether <code>trumpwin</code> and the interaction between <code>trumpwin</code> and <code>unemp</code> are significant based on our bootstrapped model.</p>
 <p>As a rule, smaller standard errors result in smaller p-values/larger t-values and larger standard errors result in larger p-values/smaller t-values. With that in mind, we can make the following comparisons:</p>
 <ul>
@@ -884,8 +884,8 @@ for (i in 1:k) {
 
 # finding average classification diagnostics out-of-sample
 summarize_all(fd2diags, mean)</code></pre>
-<pre><code>##         acc      sens      spec       ppv        f1       auc
-## 1 0.8958884 0.9669421 0.5492851 0.9126317 0.9389639 0.9118466</code></pre>
+<pre><code>##       acc      sens      spec       ppv        f1       auc
+## 1 0.89752 0.9681246 0.5525351 0.9135077 0.9399589 0.9159452</code></pre>
 <p><em>These classification diagnostics show how the previous model may predict observations out of sample. Across all diagnostics, the model is slightly worse at predicting out-of-sample, but not by a significant margin. Notably, the AUC only decreases from .923 to .916.</em></p>
 <ul>
 <li><p><strong>Accuracy</strong>: Out of sample, this model has an accuracy of .898, meaning 89.8% of its predictions were correct. (in sample: .901)</p>
@@ -989,7 +989,7 @@ for (i in 1:k) {
 # summarizing results
 summarize_all(lassodiags, mean)</code></pre>
 <pre><code>##         acc      sens      spec       ppv        f1       auc
-## 1 0.8959071 0.9673448 0.5484903 0.9124886 0.9390448 0.9154205</code></pre>
+## 1 0.8952661 0.9661443 0.5493438 0.9126141 0.9385671 0.9143985</code></pre>
 <p><em>These classification diagnostics are pretty interesting. Across all diagnostics, the model is slightly worse the original logistic regression at predicting both in- and out-of-sample, but not by a significant margin. Theoretically, because of its more conservative estimate, the LASSO model should result in improved out-of-sample predictions compared to that of the full model; while this is indeed the case here, the improvement is only marginal. Notably, when compared to the out-of-sample AUC of the full model, this AUC only improves from .9156 to .9158.</em></p>
 <ul>
 <li><p><strong>Accuracy</strong>: The LASSO model has an accuracy of .8956 out of sample, meaning 89.56% of its predictions were correct. This is lower than that of both the in- and out-of-sample full model predictions, which had accuracies of .901 and .898, respectively.</p>
@@ -1064,7 +1064,7 @@ summarize_all(lassodiags, mean)</code></pre>
 ## [61] abind_1.4-5       DBI_1.1.0         curl_4.3          R6_2.5.0         
 ## [65] utf8_1.1.4        shape_1.4.5       stringi_1.5.3     Rcpp_1.0.5       
 ## [69] vctrs_0.3.5       dbplyr_2.0.0      tidyselect_1.1.0  xfun_0.19</code></pre>
-<pre><code>## [1] &quot;2020-12-07 14:46:15 CST&quot;</code></pre>
+<pre><code>## [1] &quot;2020-12-08 22:56:16 CST&quot;</code></pre>
 <pre><code>##                                                                                           sysname 
 ##                                                                                          &quot;Darwin&quot; 
 ##                                                                                           release 
