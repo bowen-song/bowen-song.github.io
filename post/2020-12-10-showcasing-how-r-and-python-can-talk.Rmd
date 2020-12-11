@@ -99,7 +99,7 @@ plt.show()
 
 To go a little farther using Python, what if we were interested in the mean magnitude of earthquakes above and below the median depth of all earthquakes?
 ```{python}
-#importing Python
+#in Python
 #importing library
 import numpy as np
 
@@ -133,7 +133,8 @@ mean(quakesR[quakesR$depth < py$meddep,]$mag)
 
 These results are one and the same! That's all for this short demo, hope it was helpful in showing how R and Python can talk with each other in RStudio!
 
-![To wrap up, here's a pretty picture I took in Sydney!](/img/IMG_9691.jpg){width=100%}
-
-
+To wrap up, here's a pretty picture I took in Sydney!
+<center>
+![](/img/IMG_9691.jpg){width=75% height=75%}
+</center>
 
