@@ -30,8 +30,8 @@ msleep %>%
 print("hello world")
 ```
 
-Here's a cool little cove we found in the Galapagos Islands :)
 
 <center>
+Here's a cool little cove we found in the Galapagos Islands :)
 ![](/img/IMG_6626.JPG){width=75% height=75%}
 </center>

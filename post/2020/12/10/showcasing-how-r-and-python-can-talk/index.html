@@ -181,7 +181,7 @@ main.imshow(fiji, extent = [135,215,-40,0])
 #note that to use the quakesR dataset, we have to include &quot;r.&quot;
 plt1 = main.scatter(x = r.quakesR[&#39;long&#39;], y = r.quakesR[&#39;lat&#39;], alpha = .2, c = r.quakesR[&#39;depth&#39;])
 side.colorbar(plt1)</code></pre>
-<pre><code>## &lt;matplotlib.colorbar.Colorbar object at 0x7f9f3752db70&gt;</code></pre>
+<pre><code>## &lt;matplotlib.colorbar.Colorbar object at 0x7fbe093dfb70&gt;</code></pre>
 <pre class="python"><code>plt.xlabel(&quot;Longitude&quot;)
 plt.ylabel(&quot;Latitude&quot;)
 plt.title(&quot;Latitude vs Longitude&quot;)
@@ -220,8 +220,8 @@ mean(quakesR[quakesR$depth &gt; py$meddep,]$mag)</code></pre>
 mean(quakesR[quakesR$depth &lt; py$meddep,]$mag)</code></pre>
 <pre><code>## [1] 4.7176</code></pre>
 <p>These results are one and the same! That’s all for this short demo, hope it was helpful in showing how R and Python can talk with each other in RStudio!</p>
-To wrap up, here’s a pretty picture I took in Sydney!
 <center>
+To wrap up, here’s a pretty picture I took in Sydney!
 <img src="/img/IMG_9691.jpg" style="width:75.0%;height:75.0%" />
 </center>
 

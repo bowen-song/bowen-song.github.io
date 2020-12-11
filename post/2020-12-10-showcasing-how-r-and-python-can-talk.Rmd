@@ -133,8 +133,8 @@ mean(quakesR[quakesR$depth < py$meddep,]$mag)
 
 These results are one and the same! That's all for this short demo, hope it was helpful in showing how R and Python can talk with each other in RStudio!
 
-To wrap up, here's a pretty picture I took in Sydney!
 <center>
+To wrap up, here's a pretty picture I took in Sydney!
 ![](/img/IMG_9691.jpg){width=75% height=75%}
 </center>
 
