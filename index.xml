@@ -6,9 +6,19 @@
     <description>Recent content on Bowen Song</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-US</language>
-    <lastBuildDate>Mon, 07 Dec 2020 00:00:00 +0000</lastBuildDate><atom:link href="/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Thu, 10 Dec 2020 00:00:00 +0000</lastBuildDate><atom:link href="/index.xml" rel="self" type="application/rss+xml" />
     <item>
-      <title>Exploring with first post</title>
+      <title>Showcasing how R and Python can talk!</title>
+      <link>/post/2020/12/10/showcasing-how-r-and-python-can-talk/</link>
+      <pubDate>Thu, 10 Dec 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/post/2020/12/10/showcasing-how-r-and-python-can-talk/</guid>
+      <description>In more ways than one, Python is a very powerful programming language. Thus far, however, all of my projects have been conducted using R. This write-up is a demonstration of how Python can accomplish many of the same things, and interestingly, interact with R in the same environment (using RStudio).
+To start, let’s take a look at the quakes dataset in R. The quakes dataset contains the locations of 1000 earthquakes near Fiji since 1964.</description>
+    </item>
+    
+    <item>
+      <title>Exploring blogdown with first post</title>
       <link>/post/2020/12/07/exploring-with-first-post/</link>
       <pubDate>Mon, 07 Dec 2020 00:00:00 +0000</pubDate>
       

@@ -52,6 +52,8 @@
 </nav>
 
       <div class="container">
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
         <div class="blog-post">
           <h3>
             <strong><a href="/project/project2/">Project 2: Modeling, Testing, and Predicting</a></strong>
@@ -599,7 +601,7 @@ coeftest(linearfit, vcov = vcovHC(linearfit))[, 1:2]</code></pre>
 <pre class="r"><code># estimated SEs by resampling rows
 row_resample %&gt;% t %&gt;% as.data.frame %&gt;% summarize_all(sd)</code></pre>
 <pre><code>##   (Intercept) trumpwin     unemp_c trumpwin:unemp_c
-## 1    15.64243 16.59696 0.004217192      0.006397796</code></pre>
+## 1    15.52601 16.51573 0.004256546       0.00644693</code></pre>
 <p>After re-running the linear regression with bootstrapped standard errors (determined by resampling rows), the <code>(Intercept)</code> and <code>unemp</code>loyment estimates remain significant, but we cannot conclusively say whether <code>trumpwin</code> and the interaction between <code>trumpwin</code> and <code>unemp</code> are significant based on our bootstrapped model.</p>
 <p>As a rule, smaller standard errors result in smaller p-values/larger t-values and larger standard errors result in larger p-values/smaller t-values. With that in mind, we can make the following comparisons:</p>
 <ul>
@@ -888,7 +890,7 @@ for (i in 1:k) {
 # finding average classification diagnostics out-of-sample
 summarize_all(fd2diags, mean)</code></pre>
 <pre><code>##         acc      sens      spec       ppv        f1       auc
-## 1 0.8981589 0.9677624 0.5596729 0.9145014 0.9403187 0.9140526</code></pre>
+## 1 0.8962338 0.9670907 0.5526891 0.9132459 0.9392706 0.9135726</code></pre>
 <p><em>These classification diagnostics show how the previous model may predict observations out of sample. Across all diagnostics, the model is slightly worse at predicting out-of-sample, but not by a significant margin. Notably, the AUC only decreases from .923 to .916.</em></p>
 <ul>
 <li><p><strong>Accuracy</strong>: Out of sample, this model has an accuracy of .898, meaning 89.8% of its predictions were correct. (in sample: .901)</p>
@@ -930,30 +932,30 @@ lasso_fit &lt;- glmnet(fd2_preds, fd2_response, family = &quot;binomial&quot;,
     lambda = cv$lambda.1se)
 coef(lasso_fit)</code></pre>
 <pre><code>## 23 x 1 sparse Matrix of class &quot;dgCMatrix&quot;
-##                                              s0
-## (Intercept)                          2.22273242
-## cases                                .         
-## deaths                               .         
-## votes                               -0.86965188
-## never_mask                           0.09927653
-## rarely_mask                          0.07647075
-## sometimes_mask                       0.12594652
-## freq_mask                            .         
-## always_mask                         -0.71983298
-## PrimaryEdAttainedHSonly              0.93457701
-## PrimaryEdAttainedlessthanHS          0.11296009
-## PrimaryEdAttainedsomeCollegeorAssoc  0.48410993
-## lessthanHS                           .         
-## HSonly                               .         
-## someCollegeorAssoc                   .         
-## Bachorgreater                        .         
-## pop2019                              .         
-## int_mig                              .         
-## dom_mig                              0.33248352
-## pctpov                              -0.82963211
-## emp                                  .         
-## unemp                                .         
-## med_inc                             -0.15318343</code></pre>
+##                                               s0
+## (Intercept)                          2.185152580
+## cases                                .          
+## deaths                               .          
+## votes                               -0.813171295
+## never_mask                           0.069071174
+## rarely_mask                          0.056058886
+## sometimes_mask                       0.099608228
+## freq_mask                            .          
+## always_mask                         -0.753315413
+## PrimaryEdAttainedHSonly              0.879330111
+## PrimaryEdAttainedlessthanHS          0.087859761
+## PrimaryEdAttainedsomeCollegeorAssoc  0.439560722
+## lessthanHS                           .          
+## HSonly                               .          
+## someCollegeorAssoc                   .          
+## Bachorgreater                       -0.002237495
+## pop2019                              .          
+## int_mig                              .          
+## dom_mig                              0.272454016
+## pctpov                              -0.764747383
+## emp                                  .          
+## unemp                                .          
+## med_inc                             -0.123658208</code></pre>
 <p>The non-zero coefficient estimates of the LASSO regression (variables to be retained) are those of votes, never_mask, rarely_mask, sometimes_mask, always_mask, certain levels of primary education level attained (HSonly, lessthanHS, someCollegeorAssoc), dom_mig (domestic migration), pctpov (percent in poverty), and med_inc (median income). Utilizing these variables to create a model should result in improved predictions out-of-sample. To verify this, we’ll run another 10-fold CV using only the variables LASSO suggests and compare the AUCs between each model.</p>
 </div>
 </div>
@@ -992,8 +994,8 @@ for (i in 1:k) {
 
 # summarizing results
 summarize_all(lassodiags, mean)</code></pre>
-<pre><code>##         acc      sens      spec       ppv        f1      auc
-## 1 0.8962379 0.9670177 0.5534168 0.9130392 0.9391572 0.915224</code></pre>
+<pre><code>##         acc      sens      spec       ppv        f1       auc
+## 1 0.8975179 0.9682495 0.5561235 0.9134412 0.9399092 0.9153365</code></pre>
 <p><em>These classification diagnostics are pretty interesting. Across all diagnostics, the model is slightly worse the original logistic regression at predicting both in- and out-of-sample, but not by a significant margin. Theoretically, because of its more conservative estimate, the LASSO model should result in improved out-of-sample predictions compared to that of the full model; while this is indeed the case here, the improvement is only marginal. Notably, when compared to the out-of-sample AUC of the full model, this AUC only improves from .9156 to .9158.</em></p>
 <ul>
 <li><p><strong>Accuracy</strong>: The LASSO model has an accuracy of .8956 out of sample, meaning 89.56% of its predictions were correct. This is lower than that of both the in- and out-of-sample full model predictions, which had accuracies of .901 and .898, respectively.</p>
@@ -1068,7 +1070,7 @@ summarize_all(lassodiags, mean)</code></pre>
 ## [61] abind_1.4-5       DBI_1.1.0         curl_4.3          R6_2.5.0         
 ## [65] utf8_1.1.4        shape_1.4.5       stringi_1.5.3     Rcpp_1.0.5       
 ## [69] vctrs_0.3.5       dbplyr_2.0.0      tidyselect_1.1.0  xfun_0.19</code></pre>
-<pre><code>## [1] &quot;2020-12-08 23:13:03 CST&quot;</code></pre>
+<pre><code>## [1] &quot;2020-12-10 22:55:03 CST&quot;</code></pre>
 <pre><code>##                                                                                           sysname 
 ##                                                                                          &quot;Darwin&quot; 
 ##                                                                                           release 

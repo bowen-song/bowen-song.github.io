@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Bowen Song" />
+    
+    <link rel="shortcut icon" type="image/x-icon" href="/img/favicon.ico">
+    <title>Showcasing how R and Python can talk!</title>
+    <meta name="generator" content="Hugo 0.79.0" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/css/main.css" />
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:200,400,200bold,400old" />
+    
+    <!--[if lt IE 9]>
+			<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+			<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+
+    
+  </head>
+
+  <body>
+    <div id="wrap">
+      
+      <nav class="navbar navbar-default">
+  <div class="container">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/"><i class="fa fa-home"></i></a>
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <div class="navbar-collapse collapse" id="navbar">
+      <ul class="nav navbar-nav navbar-right">
+      
+        
+        <li><a href="/post/">BLOG</a></li>
+        
+        <li><a href="/projects/">PROJECTS</a></li>
+        
+        <li><a href="/resume/">RESUME</a></li>
+        
+      
+      </ul>
+    </div>
+  </div>
+</nav>
+
+      <div class="container">
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <div class="blog-post">
+          <h3>
+            <strong><a href="/post/2020/12/10/showcasing-how-r-and-python-can-talk/">Showcasing how R and Python can talk!</a></strong>
+          </h3>
+        </div>
+ 
+<div class="blog-title">
+          <h4>
+         December 10, 2020 
+            &nbsp;&nbsp;
+            
+          </h4>
+        </div>
+
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <div class="blogpost">
+              
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+<link href="/rmarkdown-libs/anchor-sections/anchor-sections.css" rel="stylesheet" />
+<script src="/rmarkdown-libs/anchor-sections/anchor-sections.js"></script>
+
+
+<p>In more ways than one, Python is a very powerful programming language. Thus far, however, all of my projects have been conducted using R. This write-up is a demonstration of how Python can accomplish many of the same things, and interestingly, interact with R in the same environment (using RStudio).</p>
+<p>To start, let’s take a look at the <code>quakes</code> dataset in R. The <code>quakes</code> dataset contains the locations of 1000 earthquakes near Fiji since 1964.</p>
+<pre class="r"><code>#in R
+library(tidyverse)</code></pre>
+<pre><code>## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.0 ──</code></pre>
+<pre><code>## ✓ ggplot2 3.3.2     ✓ purrr   0.3.4
+## ✓ tibble  3.0.4     ✓ dplyr   1.0.2
+## ✓ tidyr   1.1.2     ✓ stringr 1.4.0
+## ✓ readr   1.4.0     ✓ forcats 0.5.0</code></pre>
+<pre><code>## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+## x dplyr::filter() masks stats::filter()
+## x dplyr::lag()    masks stats::lag()</code></pre>
+<pre class="r"><code>#saving quakes dataset as quakesR
+quakesR &lt;- quakes
+#taking a peek at quakes
+glimpse(quakesR)</code></pre>
+<pre><code>## Rows: 1,000
+## Columns: 5
+## $ lat      &lt;dbl&gt; -20.42, -20.62, -26.00, -17.97, -20.42, -19.68, -11.70, -28.…
+## $ long     &lt;dbl&gt; 181.62, 181.03, 184.10, 181.66, 181.96, 184.31, 166.10, 181.…
+## $ depth    &lt;int&gt; 562, 650, 42, 626, 649, 195, 82, 194, 211, 622, 583, 249, 55…
+## $ mag      &lt;dbl&gt; 4.8, 4.2, 5.4, 4.1, 4.0, 4.0, 4.8, 4.4, 4.7, 4.3, 4.4, 4.6, …
+## $ stations &lt;int&gt; 41, 15, 43, 19, 11, 12, 43, 15, 35, 19, 13, 16, 19, 10, 94, …</code></pre>
+<p>Using R, it’s pretty easy to find out manipulate this data and find out about it.</p>
+<pre class="r"><code>#finding summary statistics for depth/mag/stations in R
+quakesR %&gt;% 
+  summarize_at(vars(depth, mag, stations),
+               funs(mean, sd))</code></pre>
+<pre><code>## Warning: `funs()` is deprecated as of dplyr 0.8.0.
+## Please use a list of either functions or lambdas: 
+## 
+##   # Simple named list: 
+##   list(mean = mean, median = median)
+## 
+##   # Auto named with `tibble::lst()`: 
+##   tibble::lst(mean, median)
+## 
+##   # Using lambdas
+##   list(~ mean(., trim = .2), ~ median(., na.rm = TRUE))
+## This warning is displayed once every 8 hours.
+## Call `lifecycle::last_warnings()` to see where this warning was generated.</code></pre>
+<pre><code>##   depth_mean mag_mean stations_mean depth_sd   mag_sd stations_sd
+## 1    311.371   4.6204        33.418 215.5355 0.402773    21.90039</code></pre>
+<p>What if we’re interested in seeing what the distribution of <code>depth</code> looks like?</p>
+<pre class="r"><code>#in R
+#making a histogram
+hist(quakes$depth, main = &quot;Histogram of Depth&quot;, xlab = &quot;Depth&quot;)</code></pre>
+<p><img src="/post/2020-12-10-showcasing-how-r-and-python-can-talk_files/figure-html/unnamed-chunk-3-1.png" width="672" /></p>
+<p>How about if we want to see a plot of the quakes’ geographic locations?</p>
+<pre class="r"><code>#in R
+#making scatterplot
+plot(quakes$long, quakes$lat, xlab = &quot;Longitude&quot;, ylab = &quot;Latitude&quot;, main = &quot;Latitude vs Longitude&quot;)</code></pre>
+<p><img src="/post/2020-12-10-showcasing-how-r-and-python-can-talk_files/figure-html/unnamed-chunk-4-1.png" width="384" /></p>
+<p>R is pretty cool! But what if we wanted to do all of this in Python instead? Instead of using Python to read in a new dataset, we can actually just use the dataset we’ve already brought into the global environment using a package called “reticulate.”</p>
+<pre class="r"><code>#in R
+#let&#39;s go ahead and load up reticulate
+library(reticulate)</code></pre>
+<p>Now we can use the R dataset (and for that matter, any variable/value created in R) in Python! To use objects from R, all we have to do is put “r.” before the object in a Python code chunk</p>
+<pre class="python"><code>#in Python
+#let&#39;s take a peek at quakesR
+r.quakesR.head()</code></pre>
+<pre><code>##      lat    long  depth  mag  stations
+## 0 -20.42  181.62    562  4.8        41
+## 1 -20.62  181.03    650  4.2        15
+## 2 -26.00  184.10     42  5.4        43
+## 3 -17.97  181.66    626  4.1        19
+## 4 -20.42  181.96    649  4.0        11</code></pre>
+<p>Awesome! Now what if we wanted to find the mean/sd of <code>depth</code>, <code>mag</code>, and <code>stations</code> using Python like we did above?</p>
+<pre class="python"><code>#in Python
+#importing library
+import pandas as pd
+
+#describe from the pandas library actually provides some additional summary stats as well!
+r.quakesR[[&#39;mag&#39;, &#39;depth&#39;, &#39;stations&#39;]].describe()</code></pre>
+<pre><code>##                mag        depth     stations
+## count  1000.000000  1000.000000  1000.000000
+## mean      4.620400   311.371000    33.418000
+## std       0.402773   215.535498    21.900386
+## min       4.000000    40.000000    10.000000
+## 25%       4.300000    99.000000    18.000000
+## 50%       4.600000   247.000000    27.000000
+## 75%       4.900000   543.000000    42.000000
+## max       6.400000   680.000000   132.000000</code></pre>
+<p>Pretty cool, these are the same results as in R.</p>
+<p>What about a histogram of <code>depth</code>?</p>
+<pre class="python"><code>#in Python
+#importing library
+import matplotlib.pyplot as plt
+
+#making histogram of depth
+plt.hist(r.quakesR[&#39;depth&#39;])</code></pre>
+<pre><code>## (array([263., 112., 104.,  64.,  33.,  42.,  36., 118., 167.,  61.]), array([ 40., 104., 168., 232., 296., 360., 424., 488., 552., 616., 680.]), &lt;BarContainer object of 10 artists&gt;)</code></pre>
+<pre class="python"><code>plt.xlabel(&#39;Depth&#39;)
+plt.ylabel(&#39;Frequency&#39;)
+plt.show()</code></pre>
+<p><img src="/post/2020-12-10-showcasing-how-r-and-python-can-talk_files/figure-html/unnamed-chunk-8-1.png" width="672" /></p>
+<p>What about if we want a plot of the quakes’ geographic locations using Python? Here’s a pretty elaborate version!</p>
+<pre class="python"><code>#in Python
+side, main = plt.subplots()
+fiji = plt.imread(&quot;http://valorielord.com/default/cache/file/D4256462-E44C-32F4-62C9A3C4AA762918_bodyimage.png&quot;)
+main.imshow(fiji, extent = [135,215,-40,0])
+#note that to use the quakesR dataset, we have to include &quot;r.&quot;
+plt1 = main.scatter(x = r.quakesR[&#39;long&#39;], y = r.quakesR[&#39;lat&#39;], alpha = .2, c = r.quakesR[&#39;depth&#39;])
+side.colorbar(plt1)</code></pre>
+<pre><code>## &lt;matplotlib.colorbar.Colorbar object at 0x7ff5f566db00&gt;</code></pre>
+<pre class="python"><code>plt.xlabel(&quot;Longitude&quot;)
+plt.ylabel(&quot;Latitude&quot;)
+plt.title(&quot;Latitude vs Longitude&quot;)
+
+plt.show()</code></pre>
+<p><img src="/post/2020-12-10-showcasing-how-r-and-python-can-talk_files/figure-html/unnamed-chunk-9-1.png" width="672" /></p>
+<p>To go a little farther using Python, what if we were interested in the mean magnitude of earthquakes above and below the median depth of all earthquakes?</p>
+<pre class="python"><code>#importing Python
+#importing library
+import numpy as np
+
+#lets create a variable called meddep (median depth)
+meddep = np.median(r.quakesR.depth)
+
+#the median depth is 247
+print(meddep)
+
+#finding mean of magnitude when depth is greater than meddep (deeper quakes)</code></pre>
+<pre><code>## 247.0</code></pre>
+<pre class="python"><code>r.quakesR[r.quakesR.depth &gt; meddep].mag.mean()
+
+#finding mean of magnitude when depth is less than meddep (shallower quakes)</code></pre>
+<pre><code>## 4.5232</code></pre>
+<pre class="python"><code>r.quakesR[r.quakesR.depth &lt; meddep].mag.mean()</code></pre>
+<pre><code>## 4.7176</code></pre>
+<p>These results show us that when depth is greater than the median depth, the mean magnitude is less than that of when depth is less than the median depth!</p>
+<p>But what if we’re interested in finding this out using R? We don’t have to make a whole new <code>meddep</code> variable, Python and R can talk back and forth! To access variables that Python created in an R code chunk, all we need is “py$”</p>
+<pre class="r"><code>#in R
+#calling on meddep from Python
+py$meddep</code></pre>
+<pre><code>## [1] 247</code></pre>
+<pre class="r"><code>#finding mean of magnitude when depth is greater than meddep (deeper quakes)
+mean(quakesR[quakesR$depth &gt; py$meddep,]$mag)</code></pre>
+<pre><code>## [1] 4.5232</code></pre>
+<pre class="r"><code>#finding mean of magnitude when depth is less than meddep (shallower quakes)
+mean(quakesR[quakesR$depth &lt; py$meddep,]$mag)</code></pre>
+<pre><code>## [1] 4.7176</code></pre>
+<p>These results are one and the same! That’s all for this short demo, hope it was helpful in showing how R and Python can talk with each other in RStudio!</p>
+<div class="figure">
+<img src="/img/IMG_9692.HEIC" style="width:100.0%" alt="" />
+<p class="caption">To wrap up, here’s a pretty picture I took in Sydney!</p>
+</div>
+
+            
+        <hr>         <div class="related-posts">
+                <h5>Related Posts</h5>
+                
+              </div> 
+            </div>
+          </div>
+
+   <hr>  <div class="disqus">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+
+    (function() {
+      
+      
+      if (window.location.hostname == "localhost")
+        return;
+
+      var disqus_shortname = '';
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  <a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div> 
+        </div>
+      </div>
+    </div>
+
+    
+    <footer>
+  <div id="footer">
+    <div class="container">
+      <p class="text-muted">&copy; All rights reserved. Powered by <a href="https://gohugo.io/">Hugo</a> and
+      <a href="http://www.github.com/nurlansu/hugo-sustain/">sustain</a> with ♥</p>
+    </div>
+  </div>
+</footer>
+<div class="footer"></div>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="/js/docs.min.js"></script>
+<script src="/js/main.js"></script>
+
+<script src="/js/ie10-viewport-bug-workaround.js"></script>
+
+
+    
+  </body>
+</html>

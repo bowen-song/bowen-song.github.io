@@ -4,16 +4,21 @@
   
   <url>
     <loc>/</loc>
-    <lastmod>2020-12-07T00:00:00+00:00</lastmod>
-  </url>
-  
-  <url>
-    <loc>/post/2020/12/07/exploring-with-first-post/</loc>
-    <lastmod>2020-12-07T00:00:00+00:00</lastmod>
+    <lastmod>2020-12-10T00:00:00+00:00</lastmod>
   </url>
   
   <url>
     <loc>/post/</loc>
+    <lastmod>2020-12-10T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/2020/12/10/showcasing-how-r-and-python-can-talk/</loc>
+    <lastmod>2020-12-10T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>/post/2020/12/07/exploring-with-first-post/</loc>
     <lastmod>2020-12-07T00:00:00+00:00</lastmod>
   </url>
   
