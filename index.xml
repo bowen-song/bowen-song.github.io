@@ -6,7 +6,16 @@
     <description>Recent content on Bowen Song</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-US</language>
-    <lastBuildDate>Thu, 10 Dec 2020 00:00:00 +0000</lastBuildDate><atom:link href="/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Fri, 11 Dec 2020 00:00:00 +0000</lastBuildDate><atom:link href="/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>K-mers and restriction enzymes with Python</title>
+      <link>/post/2020/12/11/k-mers-and-restriction-enzymes-with-python/</link>
+      <pubDate>Fri, 11 Dec 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/post/2020/12/11/k-mers-and-restriction-enzymes-with-python/</guid>
+      <description>Regular expressions (regex) are really cool. With them, you can easily (or sometimes not-so-easily) identify patterns in text. Using the “re” module, Python can understand regex and we can do a lot with it. This isn’t a tutorial for regex, but a basic understanding of regex will make the later bits with restriction enzyme binding sites a bit more digestible. Here’s a site that helped me grasp the basics: Python Regular Expressions</description>
+    </item>
+    
     <item>
       <title>Showcasing how R and Python can talk!</title>
       <link>/post/2020/12/10/showcasing-how-r-and-python-can-talk/</link>

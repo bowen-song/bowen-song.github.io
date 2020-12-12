@@ -1,0 +1,133 @@
+---
+title: K-mers and restriction enzymes with Python
+author: Bowen Song
+date: '2020-12-11'
+slug: k-mers-and-restriction-enzymes-with-python
+categories: []
+tags: []
+description: ''
+---
+
+Regular expressions (regex) are really cool. With them, you can easily (or sometimes not-so-easily) identify patterns in text. Using the "re" module, Python can understand regex and we can do a lot with it. This isn't a tutorial for regex, but a basic understanding of regex will make the later bits with restriction enzyme binding sites a bit more digestible. Here's a site that helped me grasp the basics: [Python Regular Expressions](https://developers.google.com/edu/python/regular-expressions)
+
+Here's an example:
+What if we wanted to find all of the MAC addresses in a given string?
+```{python}
+MACstring = "Jan 13 00:48:59: DROP service 68->67(udp) from 213.92.153.167 to 69.43.107.219, prefix: \"spoof iana-0/8\" \
+(in: eth0 69.43.112.233(38:f8:b7:90:45:92):68 -> 217.70.100.113(00:21:87:79:9c:d9):67 UDP len:576 ttl:64) \
+Jan 13 12:02:48: ACCEPT service dns from 74.125.186.208 to firewall(pub-nic-dns), prefix: \"none\" \
+(in: eth0 74.125.186.208(00:1a:e3:52:5d:8e):36008 -> 140.105.63.158(00:1a:9a:86:2e:62):53 UDP len:82 ttl:38) \
+Jan 13 17:44:52: DROP service 68->67(udp) from 172.45.240.237 to 217.70.177.60, prefix: \"spoof iana-0/8\" \
+(in: eth0 216.34.90.16(00:21:91:fe:a2:6f):68 -> 69.43.85.253(00:07:e1:7c:53:db):67 UDP len:328 ttl:64) \
+Jan 13 17:52:08: ACCEPT service http from 213.121.184.130 to firewall(pub-nic), prefix: \"none\" \
+(in: eth0 213.121.184.130(00:05:2e:6a:a4:14):8504 -> 140.105.63.164(00:60:11:92:ed:1b):80 TCP flags: ****S* len:52 ttl:109)"
+```
+We could technically go through the list and find all of the individual MAC addresses, but instead of doing that, it's easier to take advantage of the fact that MAC addresses are essentially 6 pairs of numbers/letters, each separated by a colon. 
+
+<center>
+"xx:xx:xx:xx:xx:xx"
+
+Where each x could either be a number of a letter.
+</center>
+
+This regex should match the MAC addresses in the string above:
+
+<center>
+"(?:[\\d\\w]{2}:){5}[\\d\\w]{2}"
+</center>
+
+It's worth noting that there are many different ways you can potentially end up with the same result, and there's not necessarily a right or wrong way to go about it! Let's see how the regex above works:
+```{python}
+import re
+
+re.findall(r"(?:[\d\w]{2}:){5}[\d\w]{2}", MACstring)
+```
+Nice! It grabs all the MAC addresses and spits them out in a list!
+
+---
+
+Moving onto some biology, what if we wanted to find out some information about a DNA sequence? Here's an example sequence:
+```{python}
+sequence = "ATGGCAATAACCCCCCGTTTCTACTTCTAGAGGAGAAAAGTATTGACATGAGCGCTCCCGGCACAAGGGCCAAAGAAGTCTCCAATTTCTTATTTCCGAATGACATGCGTCTCCTTGCGGGTAAATCACCGACCGCAATTCATAGAAGCCTGGGGGAACAGATAGGTCTAATTAGCTTAAGAGAGTAAATCCTGGGATCATTCAGTAGTAACCATAAACTTACGCTGGGGCTTCTTCGGCGGATTTTTACAGTTACCAACCAGGAGATTTGAAGTAAATCAGTTGAGGATTTAGCCGCGCTATCCGGTAATCTCCAAATTAAAACATACCGTTCCATGAAGGCTAGAATTACTTACCGGCCTTTTCCATGCCTGCGCTATACCCCCCCACTCTCCCGCTTATCCGTCCGAGCGGAGGCAGTGCGATCCTCCGTTAAGATATTCTTACGTGTGACGTAGCTATGTATTTTGCAGAGCTGGCGAACGCGTTGAACACTTCACAGATGGTAGGGATTCGGGTAAAGGGCGTATAATTGGGGACTAACATAGGCGTAGACTACGATGGCGCCAACTCAATCGCAGCTCGAGCGCCCTGAATAACGTACTCATCTCAACTCATTCTCGGCAATCTACCGAGCGACTCGATTATCAACGGCTGTCTAGCAGTTCTAATCTTTTGCCAGCATCGTAATAGCCTCCAAGAGATTGATGATAGCTATCGGCACAGAACTGAGACGGCGCCGATGGATAGCGGACTTTCGGTCAACCACAATTCCCCACGGGACAGGTCCTGCGGTGCGCATCACTCTGAATGTACAAGCAACCCAAGTGGGCCGAGCCTGGACTCAGCTGGTTCCTGCGTGAGCTCGAGACTCGGGATGACAGCTCTTTAAACATAGAGCGGGGGCGTCGAACGGTCGAGAAAGTCATAGTACCTCGGGTACCAACTTACTCAGGTTATTGCTTGAAGCTGTACTATTTTAGGGGGGGAGCGCTGAAGGTCTCTTCTTCTCATGACTGAACTCGCGAGGGTCGTGAAGTCGGTTCCTTCAATGGTTAAAAAACAAAGGCTTACTGTGCGCAGAGGAACGCCCATCTAGCGGCTGGCGTCTTGAATGCTCGGTCCCCTTTGTCATTCCGGATTAATCCATTTCCCTCATTCACGAGCTTGCGAAGTCTACATTGGTATATGAATGCGACCTAGAAGAGGGCGCTTAAAATTGGCAGTGGTTGATGCTCTAAACTCCATTTGGTTTACTCGTGCATCACCGCGATAGGCTGACAAAGGTTTAACATTGAATAGCAAGGCACTTCCGGTCTCAATGAACGGCCGGGAAAGGTACGCGCGCGGTATGGGAGGATCAAGGGGCCAATAGAGAGGCTCCTCTCTCACTCGCTAGGAGGCAAATGTAAAACAATGGTTACTGCATCGATACATAAAACATGTCCATCGGTTGCCCAAAGTGTTAAGTGTCTATCACCCCTAGGGCCGTTTCCCGCATATAAACGCCAGGTTGTATCCGCATTTGATGCTACCGTGGATGAGTCTGCGTCGAGCGCGCCGCACGAATGTTGCAATGTATTGCATGAGTAGGGTTGACTAAGAGCCGTTAGATGCGTCGCTGTACTAATAGTTGTCGACAGACCGTCGAGATTAGAAAATGGTACCAGCATTTTCGGAGGTTCTCTAACTAGTATGGATTGCGGTGTCTTCACTGTGCTGCGGCTACCCATCGCCTGAAATCCAGCTGGTGTCAAGCCATCCCCTCTCCGGGACGCCGCATGTAGTGAAACATATACGTTGCACGGGTTCACCGCGGTCCGTTCTGAGTCGACCAAGGACACAATCGAGCTCCGATCCGTACCCTCGACAAACTTGTACCCGACCCCCGGAGCTTGCCAGCTCCTCGGGTATCATGGAGCCTGTGGTTCATCGCGTCCGATATCAAACTTCGTCATGATAAAGTCCCCCCCTCGGGAGTACCAGAGAAGATGACTACTGAGTTGTGCGAT"
+```
+
+Let's say we are curious about this sequence and its restriction enzyme binding sites; specifically, we want to see if the sites ANTAAT and GCRWTG are present in our sequence. As before, while we could technically go through the sequence and find the sites manually, it's just not practical so we can use regex and Python to help! *Note that N is any base, R is A or G, and W is A or T*
+```{python}
+re.findall(r'A[ATGC]TAAT|GC[AG][AT]TG', sequence)
+```
+
+Cool, so "findall" tells us there are 4 of binding sites of interest present in our sequence! If we wanted to take it a step farther and actually cut our sequence at these sites, we could do so by using the "split" function in the "re" module. 
+
+---
+
+What about k-mers? How can we use Python to help us count/find k-mers? For this, we can create a function! Here's an example of one that counts and prints out the different 3-mers that occur in our sequence.
+```{python}
+def count_threemer(sequence):
+    number_of_threemer = len(sequence)-2    #counts number of 3-mers in the sequence provided
+    threemers = {}                          #empty dictionary for 3-mers
+    for i in range(number_of_threemer):     #goes from 0:number_of_threemer
+        threemer = sequence[i:i+3]          #extracts 3-mer sequence for dict key
+        if threemer in threemers:
+            threemers[threemer] += 1
+        else:
+            threemers[threemer] = 1
+    print(threemers)
+```
+
+Let's try it out on our sequence:
+```{python}
+count_threemer(sequence)
+```
+Really cool! But to broaden this function's applications, we can tweak a few things to make a function that accepts a sequence and an input k that will count any k-mer.
+
+Here's an example of a function that'll work:
+```{python}
+def count_kmer(sequence, k):
+    number_of_kmer = len(sequence)-k+1    #counts number of k-mers in the sequence provided
+    kmers = {}                          #empty dictionary for k-mers
+    for i in range(number_of_kmer):     #goes from 0:number_of_kmer
+        kmer = sequence[i:i+k]          #extracts k-mer sequence for dict key
+        if kmer in kmers:
+            kmers[kmer] += 1
+        else:
+            kmers[kmer] = 1
+    print(kmers)
+```
+
+Let's try it out!
+```{python}
+#3-mer
+#this should give us the same results as the above function
+count_kmer(sequence, 3)
+```
+```{python}
+#4-mer
+count_kmer(sequence, 4)
+```
+```{python}
+#5-mer
+count_kmer(sequence, 5)
+```
+
+It looks like our function works as planned! But why do k-mers matter? Well, for bioinformatics, k-mers can help out a ton when comparing DNA sequences - rather than comparing each base individually, we can actually determine whether sequences between organisms are different just by comparing k-mers. This makes comparing individual sequences (or on a larger scale, genomes) much more efficient. Pretty sweet!
+
+<center>
+To close, here's a fun picture I took of a Galapagos tortoise!
+
+![](/img/IMG_6633.JPG){width=75% height=75%}
+</center>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
