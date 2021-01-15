@@ -98,7 +98,7 @@ Because the Raspberry Pi 4 is still under the development branch of OpenWrt, the
 
 #### Step 1: Flash your other Raspberry Pi 4 with whichever version of OpenWrt you choose
 
-At the time of writing this guide, the community build images can be found [here at @wulfy23's Github repository](https://github.com/wulfy23/rpi4/tree/master/builds/). Specifically, I've downloaded `rpi4.64-snapshot-25135-2.3.656-15-r15323-ext4-fac.img.gz`, which at the time of writing this, is the most up-to-date release. Flash this image to your SD card using whichever tool you prefer, and you're just about ready to power it on. 
+At the time of writing this guide, the community build images can be found here at @wulfy23's [Github repository](https://github.com/wulfy23/rpi4/tree/master/builds/). Specifically, I've downloaded `rpi4.64-snapshot-25135-2.3.656-15-r15323-ext4-fac.img.gz`, which at the time of writing this, is the most up-to-date release. Flash this image to your SD card using whichever tool you prefer, and you're just about ready to power it on. 
 
 **This is important to note if the router you choose is also a Raspberry Pi 4 - because there is only one ethernet port on the Raspberry Pi 4, you'll need an additional adapter so your router can connect to both WAN and LAN (if you have a network switch capable of creating VLANs, I believe this is not strictly necessary but I'm not familiar with the intricacies of such a setup). For my adapter, I've chosen the TP-link TL-UE300 USB-to-Ethernet adapter which has an RTL8153 chipset. Though I haven't personally used any other USB-to-Ethernet adapters, some people in the community have made note to avoid using adapters that utilize Asix chipsets.**
 
