@@ -13,7 +13,7 @@
       <pubDate>Wed, 13 Jan 2021 00:00:00 +0000</pubDate>
       
       <guid>/post/2021/01/13/mullvad-with-wireguard-pi-hole-and-unbound/</guid>
-      <description>This post is a bit different from the others - rather than being about data science, this one’s more about a network management project I’ve been working on for the last few weeks. Although the individual documentation is plentiful for each of the three components we’ll be implementing, there were inevitably some hangups when bringing them all together. As such, this guide is meant to be a walkthrough for anyone who might be trying to accomplish the same set up as me (and also to serve as a reminder of how I set this thing up in case I ever have to do it again).</description>
+      <description>Hi, everyone! This post is a bit different from some of the others I’ve written - rather than being about data science, this one’s more about a network management project I’ve been working on for the last few weeks. Although the individual documentation is plentiful for each of the three components we’ll be implementing, there were inevitably some hangups when bringing them all together. As such, this guide is meant to be a walkthrough for anyone who might be trying to accomplish the same set up as me (and also to serve as a reminder of how I set this thing up in case I ever have to do it again).</description>
     </item>
     
     <item>

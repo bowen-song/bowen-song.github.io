@@ -8,7 +8,7 @@ tags: []
 description: ''
 ---
 
-This post is a bit different from the others - rather than being about data science, this one's more about a network management project I've been working on for the last few weeks. Although the individual documentation is plentiful for each of the three components we'll be implementing, there were inevitably some hangups when bringing them all together. As such, this guide is meant to be a walkthrough for anyone who might be trying to accomplish the same set up as me (and also to serve as a reminder of how I set this thing up in case I ever have to do it again).
+Hi, everyone! This post is a bit different from some of the others I've written - rather than being about data science, this one's more about a network management project I've been working on for the last few weeks. Although the individual documentation is plentiful for each of the three components we'll be implementing, there were inevitably some hangups when bringing them all together. As such, this guide is meant to be a walkthrough for anyone who might be trying to accomplish the same set up as me (and also to serve as a reminder of how I set this thing up in case I ever have to do it again).
 
 **Full disclosure: I'm just a hobbyist in this field so there may be more optimal, safer ways to get this set up. If you know of any ways that this set up can be improved, I'd really love to hear from you!**
 
@@ -124,7 +124,7 @@ b. Setting up your USB-to-Ethernet adapter
 
 ---
 
-### Using your router as a VPN gateway
+## **Using your router as a VPN gateway**
 
 To provide just a bit of background here, there are a number of widely (and not-as-widely) used VPN protocols that one might encounter. From PPTP to IPSec/L2TP to SSTP to IKEv2, there are many options to choose from. One of the most commonly used VPN protocols on routers is known as OpenVPN. OpenVPN is great - it has wide compatibility with many platforms and is, today, kind of the old-reliable. That being said, there is one pretty significant drawback to using OpenVPN - at least in my case. Due to its complex nature, OpenVPN can be kind of bloated, often resulting in severely reduced internet speeds for its users. 
 Enter WireGuard, the newest VPN protocol available. WireGuard runs from the Linux kernel and simplifies a lot of the bloat found in OpenVPN. It's easy to use and importantly, does not significantly reduce your internet speeds while its in use. For this reason, I've chosen to configure my VPN gateway using WireGuard instead of OpenVPN. With that out of the way, let's dive into how we can get this going.
@@ -272,7 +272,7 @@ After everything's loaded up, visit [Mullvad's Connection Check](https://mullvad
 If you've checked your connections, and there aren't any red flags, you've successfully set up Pi-hole, Unbound, and Mullvad to all play nicely on the same network! Having now used the setup for a few days, one thing I've noticed is that Wireguard really does live up to expectations - even through the VPN, I'm getting download/upload speeds very close to what I'd be getting without any VPN at all (maybe about a 5% decrease). For me, this trade-off is totally worth it. And that's it! As stated in the beginning, if you know of or come up with any way to improve this set up, I'd love to hear from you!
 
 <center>
-To close, here's a picture of a bunch of baby tortoises :D
+To close, here's a picture of a bunch of baby tortoises :D Stay safe!
 ![](/img/IMG_2222.JPG){width=75% height=75%}
 </center>
 
