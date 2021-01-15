@@ -93,11 +93,11 @@
 <h2><strong>Installing Pi-hole</strong></h2>
 <p>The installation of Pi-hole is pretty straightforward.</p>
 <div id="step-1-flash-the-raspberry-pi-with-whatever-supported-operating-system-you-choose" class="section level4">
-<h4>Step 1: Flash the Raspberry Pi with whatever supported operating system you choose</h4>
+<h4><strong>Step 1: Flash the Raspberry Pi with whatever supported operating system you choose</strong></h4>
 <p>A list of officially supported operating systems can be found at the <a href="https://docs.pi-hole.net/main/prerequisites/#supported-operating-systems">Pi-hole Prerequisites page</a>. For simplicity, I’m using Raspberry Pi OS (aka Raspbian). All of the different versions of Raspberry Pi OS can be found <a href="https://www.raspberrypi.org/software/operating-systems/#raspberry-pi-os-32-bit">here</a>. After downloading the operating system version of choice (I’ve chosen Raspberry Pi OS with desktop as I prefer not to have SSH enabled from the start), flash the image to your SD card using whatever method you like. On *nix based systems, the <code>dd</code> tool works well. If you want a GUI, something like balenaEtcher or Raspberry Pi Imager will do the job just fine.</p>
 </div>
 <div id="step-2-install-pi-hole" class="section level4">
-<h4>Step 2: Install Pi-hole</h4>
+<h4><strong>Step 2: Install Pi-hole</strong></h4>
 <p>The official documentation can be found on Pi-hole’s Github <a href="https://github.com/pi-hole/pi-hole/#one-step-automated-install">here</a>.</p>
 <p>Directly using the Terminal (or in headless setups, after SSHing in), run the following line of code to get Pi-hole installed:</p>
 <pre><code>curl -sSL https://install.pi-hole.net | bash</code></pre>
@@ -109,7 +109,7 @@
 <h2><strong>Installing Unbound</strong></h2>
 <p>The installation of Unbound is also pretty straightforward - the <a href="https://docs.pi-hole.net/guides/unbound/">official documentation</a> is great.</p>
 <div id="step-1-install-unbound-on-the-same-system-as-your-pi-hole" class="section level4">
-<h4>Step 1: Install Unbound on the same system as your Pi-hole</h4>
+<h4><strong>Step 1: Install Unbound on the same system as your Pi-hole</strong></h4>
 <p>Simply run the following line of code to get installed:</p>
 <pre><code>sudo apt install unbound</code></pre>
 <p><em>Optional: If you want to use the current <code>root.hints</code> file, you’ll need to uncomment the <code>root-hints:</code> line and run the following line of code:</em></p>
@@ -122,7 +122,7 @@
 5 0 1 */6 * wget service unbound restart</code></pre>
 </div>
 <div id="step-2-configure-pi-hole-to-use-unbound-as-its-upstream-dns-server" class="section level4">
-<h4>Step 2: Configure Pi-hole to use Unbound as its upstream DNS server</h4>
+<h4><strong>Step 2: Configure Pi-hole to use Unbound as its upstream DNS server</strong></h4>
 <p>Unbound’s full configuration file can be found at <code>/etc/unbound/unbound.conf.d/pi-hole.conf</code>. Access it using your favorite editor and configure it according to the official documentation linked above. For me, that’s nano:</p>
 <pre><code>sudo nano /etc/unbound/unbound.conf.d/pi-hole.conf</code></pre>
 <p>After setting everything up and running the recommended tests to check that Unbound is operational, all we need to do is point Pi-hole to Unbound.</p>
@@ -135,13 +135,13 @@
 <h2><strong>Installing OpenWrt on a Raspberry Pi 4</strong></h2>
 <p>Because the Raspberry Pi 4 is still under the development branch of OpenWrt, the only way to get OpenWrt onto a Raspberry Pi 4 is to flash a snapshot to it (there are no stable releases as of writing this guide). These snapshots are usually okay to use, but they come with some additional hoops to jump through - for example, in all snapshot builds, OpenWrt’s GUI is not included. With that being said, installing OpenWrt onto a Raspberry Pi 4 can be much easier due to the <a href="https://forum.openwrt.org/t/rpi4-community-build/69998">official OpenWrt Raspberry Pi 4 community build</a>. In the community build, many of the most-often-utilized packages come pre-installed and ready to go. If this isn’t preferred, you can definitely still install and configure OpenWrt from scratch but the community build makes it much easier. For me, since I needed some of the pre-installed packages anyway, I went with the community build.</p>
 <div id="step-1-flash-your-other-raspberry-pi-4-with-whichever-version-of-openwrt-you-choose" class="section level4">
-<h4>Step 1: Flash your other Raspberry Pi 4 with whichever version of OpenWrt you choose</h4>
+<h4><strong>Step 1: Flash your other Raspberry Pi 4 with whichever version of OpenWrt you choose</strong></h4>
 <p>At the time of writing this guide, the community build images can be found here at <span class="citation">@wulfy23</span>’s <a href="https://github.com/wulfy23/rpi4/tree/master/builds/">Github repository</a>. Specifically, I’ve downloaded <code>rpi4.64-snapshot-25135-2.3.656-15-r15323-ext4-fac.img.gz</code>, which at the time of writing this, is the most up-to-date release. Flash this image to your SD card using whichever tool you prefer, and you’re just about ready to power it on.</p>
 <p><strong>The following is important to note if the router you choose is also a Raspberry Pi 4</strong>. Because there is only one ethernet port on the Raspberry Pi 4, you’ll need an additional adapter so your router can connect to both WAN and LAN (if you have a network switch capable of creating VLANs, I believe this is not strictly necessary but I’m not familiar with the intricacies of such a setup). For my adapter, I’ve chosen the TP-link TL-UE300 USB-to-Ethernet adapter which has an RTL8153 chipset. Though I haven’t personally used any other USB-to-Ethernet adapters, some people in the community have made note to avoid using adapters that utilize Asix chipsets.</p>
 <p>After figuring out your adapter situation, simply plug in the adapter to the USB 3.0 port of your choice, connect your computer via ethernet to the Raspberry Pi, and boot up your machine.</p>
 </div>
 <div id="step-2-configuring-openwrt-as-a-router" class="section level4">
-<h4>Step 2: Configuring OpenWrt as a router</h4>
+<h4><strong>Step 2: Configuring OpenWrt as a router</strong></h4>
 <p>If you’ve gone with a snapshot of OpenWrt’s base install, you’ll likely need to SSH into your machine and install LuCi (OpenWrt’s GUI) from the command line. Because we’ve used the community build, LuCi comes pre-installed. To access LuCi, open up any browser and head to 192.168.1.1 (this is the default IP). With any luck, you should see the LuCi homepage.</p>
 <ol style="list-style-type: lower-alpha">
 <li><p>Get logged in and set a strong password for your router</p>
@@ -165,13 +165,13 @@
 Enter WireGuard, the newest VPN protocol available. WireGuard runs from the Linux kernel and simplifies a lot of the bloat found in OpenVPN. It’s easy to use and importantly, does not significantly reduce your internet speeds while its in use. For this reason, I’ve chosen to configure my VPN gateway using WireGuard instead of OpenVPN. With that out of the way, let’s dive into how we can get this going.</p>
 <p>For some of the initial set up, Mullvad writes a <a href="https://mullvad.net/en/help/running-wireguard-router/">pretty good guide</a>. In order to make Pi-hole and Unbound play nicely with Mullvad, however, there are a number of changes and additions to be made to Mullvad’s official guide. We’ll walk through each of the steps to clear up the details.</p>
 <div id="step-1-configuring-publicprivate-key-pair" class="section level4">
-<h4>Step 1: Configuring public/private key pair</h4>
+<h4><strong>Step 1: Configuring public/private key pair</strong></h4>
 <p>If you are following along with Mullvad’s guide, you’ll notice we’ve skipped the first few steps. This is because, through installing the community build of OpenWrt, a lot of the initial steps have been taken care of. As such, we’ll start by creating a public and private keypair to use with WireGuard. To do this, SSH into your router and run the following line of code according to Mullvad’s guide:</p>
 <pre><code>wg genkey | tee privatekey | wg pubkey &gt; publickey</code></pre>
 <p>These keys will be used in later steps and are accessible using <code>cat publickey</code> and <code>cat privatekey</code>.</p>
 </div>
 <div id="step-2-obtaining-an-ip-from-mullvad" class="section level4">
-<h4>Step 2: Obtaining an IP from Mullvad</h4>
+<h4><strong>Step 2: Obtaining an IP from Mullvad</strong></h4>
 <p>Here, we can skip the instructions to install <code>curl</code> and jump straight into getting an IP - run the following line of code according to Mullvad’s guide:</p>
 <pre><code># Replace &#39;YOURMULLVADACCOUNTNUMBER&#39; and &#39;YOURPUBLICKEY&#39; with your Mullvad account number and the public key as generated above, respectively
 
@@ -179,7 +179,7 @@ curl https://api.mullvad.net/wg/ -d account=YOURMULLVADACCOUNTNUMBER --data-urle
 <p>The IP address generated will be used in the following step while configuring the WireGuard interface.</p>
 </div>
 <div id="step-3-create-and-configure-the-wireguard-interface" class="section level4">
-<h4>Step 3: Create and configure the WireGuard interface</h4>
+<h4><strong>Step 3: Create and configure the WireGuard interface</strong></h4>
 <p>In a similar fashion to how we created the WAN interface while setting up OpenWrt, add a new interface:</p>
 <pre><code>- name it &#39;WGINTERFACE&#39;
 
@@ -233,14 +233,14 @@ curl https://api.mullvad.net/wg/ -d account=YOURMULLVADACCOUNTNUMBER --data-urle
 </ul>
 <p>From here, we just have to put it all together.</p>
 <div id="step-1-direct-all-traffic-received-by-your-router-to-your-pi-hole-unbound" class="section level4">
-<h4>Step 1: Direct all traffic received by your router to your Pi-hole + Unbound</h4>
+<h4><strong>Step 1: Direct all traffic received by your router to your Pi-hole + Unbound</strong></h4>
 <p>If you haven’t already, you’ll likely want to assign the Raspberry Pi running Pi-hole + Unbound a static IP address. This can either be accomplished directly on the Raspberry Pi, or via the DHCP and DNS settings on OpenWrt (Network -&gt; DHCP and DNS -&gt; Static Leases).</p>
 <p>From here, navigate to your LAN interface and point all of the LAN traffic to your Raspberry Pi running Pi-hole and Unbound: Network -&gt; Interfaces -&gt; LAN (edit) -&gt; DHCP Server -&gt; Advanced Settings -&gt; DHCP-Options</p>
 <p>In the DHCP-Options section of your LAN interface, enter: <code>6,yourpiholeip</code></p>
 <p>For example, if your Raspberry Pi running Pi-hole and Unbound has a static IP address of 192.168.1.100, you’d enter <code>6,192.168.1.100</code>.</p>
 </div>
 <div id="step-2-reconfigure-unbound-if-necessary" class="section level4">
-<h4>Step 2: Reconfigure Unbound (if necessary)</h4>
+<h4><strong>Step 2: Reconfigure Unbound (if necessary)</strong></h4>
 <p>This step is where things get kind of muddled - I’m not an expert in networking so I’m not exactly why these settings were necessary, but without these additions/changes to the default Unbound configuration, a non-trivial number of seemingly random domains would return with ‘SERVFAIL’ or ‘NXDOMAIN’. I was only able to fix these problems by tinkering with Unbound’s configuration.</p>
 <p>Like above, the configuration file can be accessed using whichever text editor you prefer:</p>
 <pre><code>sudo nano /etc/unbound/unbound.conf.d/pi-hole.conf</code></pre>
@@ -253,7 +253,7 @@ curl https://api.mullvad.net/wg/ -d account=YOURMULLVADACCOUNTNUMBER --data-urle
 </ul>
 </div>
 <div id="step-3-restart-everything-and-check-that-everythings-working" class="section level4">
-<h4>Step 3: Restart everything and check that everything’s working!</h4>
+<h4><strong>Step 3: Restart everything and check that everything’s working!</strong></h4>
 <ul>
 <li>Restart your Raspberry Pi running Pi-hole and Unbound. SSH in and run this (or just pull power and plug it in again):</li>
 </ul>
