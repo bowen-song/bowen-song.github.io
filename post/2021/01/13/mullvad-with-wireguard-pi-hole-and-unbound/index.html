@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="author" content="Bowen Song" />
+    
+    <link rel="shortcut icon" type="image/x-icon" href="/img/favicon.ico">
+    <title>Mullvad with WireGuard &#43; Pi-hole and Unbound</title>
+    <meta name="generator" content="Hugo 0.79.0" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="/css/main.css" />
+    <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
+    <link rel="stylesheet" type="text/css" href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:200,400,200bold,400old" />
+    
+    <!--[if lt IE 9]>
+			<script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+			<script src="https://oss.maxcdn.com/libs/respond.js/1.4.2/respond.min.js"></script>
+		<![endif]-->
+
+    
+  </head>
+
+  <body>
+    <div id="wrap">
+      
+      <nav class="navbar navbar-default">
+  <div class="container">
+    <div class="navbar-header">
+      <a class="navbar-brand" href="/"><i class="fa fa-home"></i></a>
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+    </div>
+    <div class="navbar-collapse collapse" id="navbar">
+      <ul class="nav navbar-nav navbar-right">
+      
+        
+        <li><a href="/post/">BLOG</a></li>
+        
+        <li><a href="/projects/">PROJECTS</a></li>
+        
+        <li><a href="/resume.pdf">RESUME</a></li>
+        
+      
+      </ul>
+    </div>
+  </div>
+</nav>
+
+      <div class="container">
+        <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <div class="blog-post">
+          <h3>
+            <strong><a href="/post/2021/01/13/mullvad-with-wireguard-pi-hole-and-unbound/">Mullvad with WireGuard &#43; Pi-hole and Unbound</a></strong>
+          </h3>
+        </div>
+ 
+<div class="blog-title">
+          <h4>
+         January 13, 2021 
+            &nbsp;&nbsp;
+            
+          </h4>
+        </div>
+
+        <div class="panel panel-default">
+          <div class="panel-body">
+            <div class="blogpost">
+              
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+<link href="/rmarkdown-libs/anchor-sections/anchor-sections.css" rel="stylesheet" />
+<script src="/rmarkdown-libs/anchor-sections/anchor-sections.js"></script>
+
+
+<p>This post is a bit different from the others - rather than being about data science, this one’s more about a network management project I’ve been working on for the last few weeks. Although the individual documentation is plentiful for each of the three components we’ll be implementing, there were inevitably some hangups when bringing them all together. As such, this guide is meant to be a walkthrough for anyone who might be trying to accomplish the same set up as me (and also to serve as a reminder of how I set this thing up in case I ever have to do it again).</p>
+<p><strong>Full disclosure: I’m just a hobbyist in this field so there may be more optimal, safer ways to get this set up. If you know of any ways that this set up can be improved, I’d really love to hear from you!</strong></p>
+<hr />
+<div id="the-setup" class="section level4">
+<h4>The setup:</h4>
+<center>
+<strong>Client (phones, computers, etc.) -&gt; Router -&gt; Pi-hole -&gt; Unbound -&gt; Router -&gt; Mullvad VPN -&gt; WAN</strong>
+</center>
+<p>In essence, I wanted all of my local traffic to be routed through Mullvad’s VPN service, but before entering the VPN tunnel, first be routed through Pi-hole to filter DNS requests and Unbound as the upstream DNS server. In this way, I’d be able to reap the benefits of Pi-hole’s ad-blocking, Unbound’s local recursive DNS resolution, and Mullvad’s commitment to privacy on the internet. <em>It’s probably worth noting that this setup likely works with other VPN providers who offer support for WireGuard, but I haven’t personally tested any other VPN providers so small differences may be present.</em></p>
+<p>In terms of the materials necessary to make this work, at the very least, you’ll need one Raspberry Pi (or some kind of Docker/VM solution) to run Pi-hole and Unbound and a separate router/system capable of running OpenWrt, an open source, Linux based router operating system. For my Pi-hole and Unbound setup, I chose the Raspberry Pi 4B - you could definitely get away with even something like a Raspberry Pi Zero W as Pi-hole and Unbound are not that CPU or memory intensive. For my router, I chose to use another Raspberry Pi 4B - though I believe any of the devices found at OpenWrt’s <a href="https://openwrt.org/toh/start">Table of Hardware</a> will do. With that out of the way, let’s get into it!</p>
+<hr />
+</div>
+<div id="installing-pi-hole" class="section level2">
+<h2><strong>Installing Pi-hole</strong></h2>
+<p>The installation of Pi-hole is pretty straightforward.</p>
+<div id="step-1-flash-the-raspberry-pi-with-whatever-supported-operating-system-you-choose" class="section level4">
+<h4>Step 1: Flash the Raspberry Pi with whatever supported operating system you choose</h4>
+<p>A list of officially supported operating systems can be found at the <a href="https://docs.pi-hole.net/main/prerequisites/#supported-operating-systems">Pi-hole Prerequisites page</a>. For simplicity, I’m using Raspberry Pi OS (aka Raspbian). All of the different versions of Raspberry Pi OS can be found <a href="https://www.raspberrypi.org/software/operating-systems/#raspberry-pi-os-32-bit">here</a>. After downloading the operating system version of choice (I’ve chosen Raspberry Pi OS with desktop as I prefer not to have SSH enabled from the start), flash the image to your SD card using whatever method you like. On *nix based systems, the <code>dd</code> tool works well. If you want a GUI, something like balenaEtcher or Raspberry Pi Imager will do the job just fine.</p>
+</div>
+<div id="step-2-install-pi-hole" class="section level4">
+<h4>Step 2: Install Pi-hole</h4>
+<p>The official documentation can be found on Pi-hole’s Github <a href="https://github.com/pi-hole/pi-hole/#one-step-automated-install">here</a>.</p>
+<p>Directly using the Terminal (or in headless setups, after SSHing in), run the following line of code to get Pi-hole installed:</p>
+<pre><code>curl -sSL https://install.pi-hole.net | bash</code></pre>
+<p>If you prefer not to pipe to bash, installing Pi-hole can also be accomplished by cloning Pi-hole’s Github repository and running the installer or manually downloading and running the Pi-hole installer. Make sure to check out the official documentation linked above for details on these methods of installation. At this point, we are done installing Pi-hole! If Pi-hole is the only thing you want in your network, all you need to do is set your router to have all of its DHCP clients use Pi-hole, or if your router can’t direct clients to Pi-hole, use Pi-hole’s built-in DHCP server functionality. Further details can be found on <a href="https://docs.pi-hole.net/main/post-install/">Pi-hole’s Post-Install documentation</a>.</p>
+<hr />
+</div>
+</div>
+<div id="installing-unbound" class="section level2">
+<h2><strong>Installing Unbound</strong></h2>
+<p>The installation of Unbound is also pretty straightforward - the <a href="https://docs.pi-hole.net/guides/unbound/">official documentation</a> is great.</p>
+<div id="step-1-install-unbound-on-the-same-system-as-your-pi-hole" class="section level4">
+<h4>Step 1: Install Unbound on the same system as your Pi-hole</h4>
+<p>Simply run the following line of code to get installed:</p>
+<pre><code>sudo apt install unbound</code></pre>
+<p><em>Optional: If you want to use the current <code>root.hints</code> file, you’ll need to uncomment the <code>root-hints:</code> line and run the following line of code:</em></p>
+<pre><code>wget https://www.internic.net/domain/named.root -qO- | sudo tee /var/lib/unbound/root.hints</code></pre>
+<p><em>As noted in the official documentation, this list of root servers is only periodically updated so it’s not necessary to keep it super up-to-date. That being said, if you are like me (forgetful about keeping things update), a cron job can be used to update the root servers automatically. There are many different ways to accomplish this automatic update, but here’s what I’ve used:</em></p>
+<pre><code># Updates root.hints on the 1st day of every 6th month
+0 0 1 */6 * wget -O /var/lib/unbound/root.hints https://www.internic.net/domain/named.root
+
+# Restart unbound after updating servers - occurs on the 1st day of every 6th month, 5 minutes after updating root.hints
+5 0 1 */6 * wget service unbound restart</code></pre>
+</div>
+<div id="step-2-configure-pi-hole-to-use-unbound-as-its-upstream-dns-server" class="section level4">
+<h4>Step 2: Configure Pi-hole to use Unbound as its upstream DNS server</h4>
+<p>Unbound’s full configuration file can be found at <code>/etc/unbound/unbound.conf.d/pi-hole.conf</code>. Access it using your favorite editor and configure it according to the official documentation linked above. For me, that’s nano:</p>
+<pre><code>sudo nano /etc/unbound/unbound.conf.d/pi-hole.conf</code></pre>
+<p>After setting everything up and running the recommended tests to check that Unbound is operational, all we need to do is point Pi-hole to Unbound.</p>
+<p>From the Pi-hole admin page (which can be found at yourpiholeip/admin/index.php), go to the DNS settings (Settings -&gt; DNS) and uncheck all existing upstream DNS servers. After this, check the box for Custom 1, and type in the interface and port configured in Unbound (formatted as <code>interface#port</code>). For me, since I followed the guide, my Custom 1 address looks like this: <code>127.0.0.1#5335</code></p>
+<p>And that’s it (for now)! If Pi-hole and Unbound is all you want in your network, you are done. Otherwise, keep reading on to find out how to throw Mullvad into the mix.</p>
+<hr />
+</div>
+</div>
+<div id="installing-openwrt-on-a-raspberry-pi-4" class="section level2">
+<h2><strong>Installing OpenWrt on a Raspberry Pi 4</strong></h2>
+<p>Because the Raspberry Pi 4 is still under the development branch of OpenWrt, the only way to get OpenWrt onto a Raspberry Pi 4 is to flash a snapshot to it (there are no stable releases as of writing this guide). These snapshots are usually okay to use, but they come with some additional hoops to jump through - for example, in all snapshot builds, OpenWrt’s GUI is not included. With that being said, installing OpenWrt onto a Raspberry Pi 4 can be much easier due to the <a href="https://forum.openwrt.org/t/rpi4-community-build/69998">official OpenWrt Raspberry Pi 4 community build</a>. In the community build, many of the most-often-utilized packages come pre-installed and ready to go. If this isn’t preferred, you can definitely still install and configure OpenWrt from scratch but the community build makes it much easier. For me, since I needed some of the pre-installed packages anyway, I went with the community build.</p>
+<div id="step-1-flash-your-other-raspberry-pi-4-with-whichever-version-of-openwrt-you-choose" class="section level4">
+<h4>Step 1: Flash your other Raspberry Pi 4 with whichever version of OpenWrt you choose</h4>
+<p>At the time of writing this guide, the community build images can be found <span class="citation">[here at @wulfy23's Github repository]</span>(<a href="https://github.com/wulfy23/rpi4/tree/master/builds/" class="uri">https://github.com/wulfy23/rpi4/tree/master/builds/</a>). Specifically, I’ve downloaded <code>rpi4.64-snapshot-25135-2.3.656-15-r15323-ext4-fac.img.gz</code>, which at the time of writing this, is the most up-to-date release. Flash this image to your SD card using whichever tool you prefer, and you’re just about ready to power it on.</p>
+<p><strong>It is is important to note if the router you choose is also a Raspberry Pi 4 - because there is only one ethernet port on the Raspberry Pi 4, you’ll need an additional adapter so your router can connect to both WAN and LAN (if you have a network switch capable of creating VLANs, I believe this is not strictly necessary but I’m not familiar with the intricacies of such a setup). For my adapter, I’ve chosen the TP-link TL-UE300 USB-to-Ethernet adapter which has an RTL8153 chipset. Though I haven’t personally used any other USB-to-Ethernet adapters, some people in the community have made note to avoid using adapters that utilize Asix chipsets.</strong></p>
+<p>After figuring out your adapter situation, simply plug in the adapter to the USB 3.0 port of your choice, connect your computer via ethernet to the Raspberry Pi, and boot up your machine.</p>
+</div>
+<div id="step-2-configuring-openwrt-as-a-router" class="section level4">
+<h4>Step 2: Configuring OpenWrt as a router</h4>
+<p>If you’ve gone with a snapshot of OpenWrt’s base install, you’ll likely need to SSH into your machine and install LuCi (OpenWrt’s GUI) from the command line. Because we’ve used the community build, LuCi comes pre-installed. To access LuCi, open up any browser and head to 192.168.1.1 (this is the default IP). With any luck, you should see the LuCi homepage.</p>
+<ol style="list-style-type: lower-alpha">
+<li><p>Get logged in and set a strong password for your router</p>
+<ul>
+<li><p>the default username is <code>root</code> and there is no default password</p></li>
+<li><p>to change your password: System -&gt; Administration -&gt; Router Password</p></li>
+</ul></li>
+<li><p>Setting up your USB-to-Ethernet adapter</p>
+<ul>
+<li><p>Create a new WAN interface for your adapter: Network -&gt; Interfaces -&gt; ADD NEW INTERFACE</p></li>
+<li><p>Name the interface ‘wan’, select the protocol to be used (for me, using a cable modem where the ISP provides an IP, the protocol needed was ‘DHCP Client’), and select the interface corresponding to the USB-to-Ethernet adapter (for me, this happened to be “eth1”). If the correct interface does not show up, you’ll need to check with OpenWrt’s forums and find the corresponding package for your adapter. Luckily, the package for RTL8153 chipsets came pre-installed with the community build, so that wasn’t necessary for my setup.</p></li>
+<li><p>Hit Save &amp; Apply, connect your router to the WAN, and you should now have a fully functional router running on your Raspberry Pi!</p></li>
+</ul></li>
+</ol>
+<hr />
+</div>
+<div id="using-your-router-as-a-vpn-gateway" class="section level3">
+<h3>Using your router as a VPN gateway</h3>
+<p>To provide just a bit of background here, there are a number of widely (and not-as-widely) used VPN protocols that one might encounter. From PPTP to IPSec/L2TP to SSTP to IKEv2, there are many options to choose from. One of the most commonly used VPN protocols on routers is known as OpenVPN. OpenVPN is great - it has wide compatibility with many platforms and is, today, kind of the old-reliable. That being said, there is one pretty significant drawback to using OpenVPN - at least in my case. Due to its complex nature, OpenVPN can be kind of bloated, often resulting in severely reduced internet speeds for its users.
+Enter WireGuard, the newest VPN protocol available. WireGuard runs from the Linux kernel and simplifies a lot of the bloat found in OpenVPN. It’s easy to use and importantly, does not significantly reduce your internet speeds while its in use. For this reason, I’ve chosen to configure my VPN gateway using WireGuard instead of OpenVPN. With that out of the way, let’s dive into how we can get this going.</p>
+<p>For some of the initial set up, Mullvad writes a <a href="https://mullvad.net/en/help/running-wireguard-router/">pretty good guide</a>. In order to make Pi-hole and Unbound play nicely with Mullvad, however, there are a number of changes and additions to be made to Mullvad’s official guide. We’ll walk through each of the steps to clear up the details.</p>
+<div id="step-1-configuring-publicprivate-key-pair" class="section level4">
+<h4>Step 1: Configuring public/private key pair</h4>
+<p>If you are following along with Mullvad’s guide, you’ll notice we’ve skipped the first few steps. This is because, through installing the community build of OpenWrt, a lot of the initial steps have been taken care of. As such, we’ll start by creating a public and private keypair to use with WireGuard. To do this, SSH into your router and run the following line of code according to Mullvad’s guide:</p>
+<pre><code>wg genkey | tee privatekey | wg pubkey &gt; publickey</code></pre>
+<p>These keys will be used in later steps and are accessible using <code>cat publickey</code> and <code>cat privatekey</code>.</p>
+</div>
+<div id="step-2-obtaining-an-ip-from-mullvad" class="section level4">
+<h4>Step 2: Obtaining an IP from Mullvad</h4>
+<p>Here, we can skip the instructions to install <code>curl</code> and jump straight into getting an IP - run the following line of code according to Mullvad’s guide:</p>
+<pre><code># Replace &#39;YOURMULLVADACCOUNTNUMBER&#39; and &#39;YOURPUBLICKEY&#39; with your Mullvad account number and the public key as generated above, respectively
+
+curl https://api.mullvad.net/wg/ -d account=YOURMULLVADACCOUNTNUMBER --data-urlencode pubkey=YOURPUBLICKEY</code></pre>
+<p>The IP address generated will be used in the following step while configuring the WireGuard interface.</p>
+</div>
+<div id="step-3-create-and-configure-the-wireguard-interface" class="section level4">
+<h4>Step 3: Create and configure the WireGuard interface</h4>
+<p>In a similar fashion to how we created the WAN interface while setting up OpenWrt, add a new interface:</p>
+<pre><code>- name it &#39;WGINTERFACE&#39;
+
+- for the protocol, select &#39;WireGuard VPN&#39;</code></pre>
+<p>Once the interface is created:</p>
+<ol style="list-style-type: lower-alpha">
+<li><p><em>General Settings</em></p>
+<ul>
+<li><p>Private Key: your private key (use <code>cat privatekey</code> to get this)</p></li>
+<li><p>Listen Port: 51280</p></li>
+<li><p>IP Addresses: your IP address (obtained from Step 2)</p></li>
+</ul></li>
+<li><p><em>Advanced Settings</em></p>
+<ul>
+<li><p>Force Link: Checked</p></li>
+<li><p>MTU: 1420</p></li>
+</ul></li>
+<li><p><em>Peers</em>: Click on Add Peer to create a new peer:</p>
+<ul>
+<li><p>Public Key: public key of Mullvad Server of choice - a full list of Mullvad’s servers can be found <a href="https://mullvad.net/en/servers/">here</a></p></li>
+<li><p>Allowed IPs: 0.0.0.0/0</p></li>
+<li><p>Route Allowed IPs: Checked</p></li>
+<li><p>Endpoint Host: either the IP or DNS of Mullvad Server of choice (ie: au3-wireguard.mullvad.net)</p></li>
+<li><p>Endpoint Port (<strong>take note that this step is different from the guide</strong>): multihop port of the server of choice (ie: 3100 for au3-wireguard.mullvad.net)</p></li>
+<li><p>Persistent Keep Alive: 25</p></li>
+</ul></li>
+</ol>
+<p>That’s all for the WireGuard interface!</p>
+<hr />
+</div>
+</div>
+<div id="create-a-new-firewall-zone-for-your-wireguard-interface" class="section level3">
+<h3>Create a new firewall zone for your WireGuard interface</h3>
+<p>Navigate to the firewall settings for your network on the router: Network -&gt; Firewall</p>
+<ul>
+<li><p>create a new zone for your WGINTERFACE</p></li>
+<li><p>enable masquerading and MSS clamping for your WireGuard zone</p></li>
+<li><p>edit the LAN zone so that you can forward to your newly created WireGuard zone (this is done by setting “Allow forward to destination zones” to your WireGuard zone)</p></li>
+<li><p><strong>additional step</strong>: edit the WireGuard zone so that forwarding is allowed to the LAN zone (this is not officially indicated in the guide, but I had trouble getting my setup to work without this)</p></li>
+</ul>
+<p>And that’s all we’ll be using from Mullvad’s guide! We don’t want to use Mullvad’s DNS settings, and for my purposes, it wasn’t necessary to change the IP address of the router.</p>
+<hr />
+</div>
+</div>
+<div id="final-steps" class="section level2">
+<h2><strong>Final Steps</strong></h2>
+<p>Just to recap a bit, here’s where we’re at:</p>
+<ul>
+<li><p>Pi-hole is up and running (but nothing is using it yet)</p></li>
+<li><p>Pi-hole is configured to use Unbound as its upstream DNS server</p></li>
+<li><p>Our other Raspberry Pi 4 (router) is running OpenWrt and is ready to route all internet traffic through the WireGuard interface we’ve created</p></li>
+</ul>
+<p>From here, we just have to put it all together.</p>
+<div id="step-1-direct-all-traffic-received-by-your-router-to-your-pi-hole-unbound" class="section level4">
+<h4>Step 1: Direct all traffic received by your router to your Pi-hole + Unbound</h4>
+<p>If you haven’t already, you’ll likely want to assign the Raspberry Pi running Pi-hole + Unbound a static IP address. This can either be accomplished directly on the Raspberry Pi, or via the DHCP and DNS settings on OpenWrt (Network -&gt; DHCP and DNS -&gt; Static Leases).</p>
+<p>From here, navigate to your LAN interface and point all of the LAN traffic to your Raspberry Pi running Pi-hole and Unbound: Network -&gt; Interfaces -&gt; LAN (edit) -&gt; DHCP Server -&gt; Advanced Settings -&gt; DHCP-Options</p>
+<p>In the DHCP-Options section of your LAN interface, enter: <code>6,yourpiholeip</code></p>
+<p>For example, if your Raspberry Pi running Pi-hole and Unbound has a static IP address of 192.168.1.100, you’d enter <code>6,192.168.1.100</code>.</p>
+</div>
+<div id="step-2-reconfigure-unbound-if-necessary" class="section level4">
+<h4>Step 2: Reconfigure Unbound (if necessary)</h4>
+<p>This step is where things get kind of muddled - I’m not an expert in networking so I’m not exactly why these settings were necessary, but without these additions/changes to the default Unbound configuration, a non-trivial number of seemingly random domains would return with ‘SERVFAIL’ or ‘NXDOMAIN’. I was only able to fix these problems by tinkering with Unbound’s configuration.</p>
+<p>Like above, the configuration file can be accessed using whichever text editor you prefer:</p>
+<pre><code>sudo nano /etc/unbound/unbound.conf.d/pi-hole.conf</code></pre>
+<p>Once in the configuration file, the following changes were needed:</p>
+<ul>
+<li><p>edns-buffer-size: 512</p></li>
+<li><p>harden-glue: no</p></li>
+<li><p>qname-minimisation: no</p></li>
+<li><p>disable-dnssec-lame-check: yes</p></li>
+</ul>
+</div>
+<div id="step-3-restart-everything-and-check-that-everythings-working" class="section level4">
+<h4>Step 3: Restart everything and check that everything’s working!</h4>
+<ul>
+<li>Restart your Raspberry Pi running Pi-hole and Unbound. SSH in and run this (or just pull power and plug it in again):</li>
+</ul>
+<pre><code>sudo reboot</code></pre>
+<ul>
+<li>Restart your Raspberry Pi running OpenWrt. Navigate to LuCi, and go to System -&gt; Reboot -&gt; Perform Reboot</li>
+</ul>
+<p>After everything’s loaded up, visit <a href="https://mullvad.net/en/check/">Mullvad’s Connection Check</a> and/or <a href="https://ipleak.net">ipleak.net</a> to check your connection. If we’ve set up the network correctly, all devices on your network should now be operating behind Mullvad’s VPN!</p>
+<p><strong>If things aren’t working after just one reboot, I’ve noticed it’s sometimes necessary to reboot several times, or wait a few minutes for things to settle in, if you will.</strong></p>
+<hr />
+<p>If you’ve checked your connections, and there aren’t any red flags, you’ve successfully set up Pi-hole, Unbound, and Mullvad to all play nicely on the same network! Having now used the setup for a few days, one thing I’ve noticed is that Wireguard really does live up to expectations - even through the VPN, I’m getting download/upload speeds very close to what I’d be getting without any VPN at all (maybe about a 5% decrease). For me, this trade-off is totally worth it. And that’s it! As stated in the beginning, if you know of or come up with any way to improve this set up, I’d love to hear from you!</p>
+<center>
+To close, here’s a picture of a bunch of baby tortoises :D
+<img src="/img/IMG_2222.JPG" style="width:75.0%;height:75.0%" />
+</center>
+</div>
+</div>
+
+            
+        <hr>         <div class="related-posts">
+                <h5>Related Posts</h5>
+                
+              </div> 
+            </div>
+          </div>
+
+   <hr>  <div class="disqus">
+  <div id="disqus_thread"></div>
+  <script type="text/javascript">
+
+    (function() {
+      
+      
+      if (window.location.hostname == "localhost")
+        return;
+
+      var disqus_shortname = '';
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    })();
+  </script>
+  <noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+  <a href="http://disqus.com/" class="dsq-brlink">comments powered by <span class="logo-disqus">Disqus</span></a>
+</div> 
+        </div>
+      </div>
+    </div>
+
+    
+    <footer>
+  <div id="footer">
+    <div class="container">
+      <p class="text-muted">&copy; All rights reserved. Powered by <a href="https://gohugo.io/">Hugo</a> and
+      <a href="http://www.github.com/nurlansu/hugo-sustain/">sustain</a> with ♥</p>
+    </div>
+  </div>
+</footer>
+<div class="footer"></div>
+
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+<script src="/js/docs.min.js"></script>
+<script src="/js/main.js"></script>
+
+<script src="/js/ie10-viewport-bug-workaround.js"></script>
+
+
+    
+  </body>
+</html>
