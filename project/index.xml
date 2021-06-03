@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Projects on Bowen Song</title>
+    <link>/project/</link>
+    <description>Recent content in Projects on Bowen Song</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-US</language>
+    <lastBuildDate>Tue, 24 Nov 2020 00:00:00 +0000</lastBuildDate><atom:link href="/project/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Project 2: Modeling, Testing, and Predicting</title>
+      <link>/project/project2/</link>
+      <pubDate>Tue, 24 Nov 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/project/project2/</guid>
+      <description>Setting Up # all data sources linked at the end election results by # county elect_untidy &amp;lt;- read_csv(&amp;quot;presidential.csv&amp;quot;) # COVID-19 by county cvd_untidy &amp;lt;- read_csv(&amp;quot;us-counties2.csv&amp;quot;) # mask use by county mask_untidy &amp;lt;- read_csv(&amp;quot;mask-use-by-county2.csv&amp;quot;) # educational attainment by county data should discretized # into dominant educational level by county education_untidy &amp;lt;- read_csv(&amp;quot;Education.csv&amp;quot;) # population data by county popdata_untidy &amp;lt;- read_csv(&amp;quot;PopulationEstimates.csv&amp;quot;) # poverty estimates by county povdata_untidy &amp;lt;- read_csv(&amp;quot;PovertyEstimates.csv&amp;quot;) # unemployment data and household income estimates by county unemp_untidy &amp;lt;- read_csv(&amp;quot;Unemployment.</description>
+    </item>
+    
+    <item>
+      <title>Project 1: Exploratory Data Analysis</title>
+      <link>/project/project1/</link>
+      <pubDate>Sun, 18 Oct 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/project/project1/</guid>
+      <description>Setting Up # all packages library(tidyverse) library(ggplot2) library(lubridate) library(stringr) library(knitr) library(kableExtra) library(scales) library(cluster) # all data sources linked at the end COVID-19 by county cvd_untidy &amp;lt;- read_csv(&amp;quot;us-counties.csv&amp;quot;) # K-12 school district reopening plans kplan_untidy &amp;lt;- read_csv(&amp;quot;District_Reopening_Data.csv&amp;quot;) # college reopening plans cplan_untidy &amp;lt;- read_csv(&amp;quot;us-college-plans.csv&amp;quot;) # K-12 location by county kloc_untidy &amp;lt;- read_csv(&amp;quot;sdlist.csv&amp;quot;) # college location by county cloc_untidy &amp;lt;- read_csv(&amp;quot;us-colleges-and-universities.csv&amp;quot;) # mask use by county mask_untidy &amp;lt;- read_csv(&amp;quot;mask-use-by-county.</description>
+    </item>
+    
+  </channel>
+</rss>

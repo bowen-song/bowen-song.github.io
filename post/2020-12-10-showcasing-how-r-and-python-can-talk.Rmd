@@ -1,0 +1,140 @@
+---
+title: Showcasing how R and Python can talk!
+author: ''
+date: '2020-12-10'
+slug: showcasing-how-r-and-python-can-talk
+categories: []
+tags: []
+description: ''
+---
+
+In more ways than one, Python is a very powerful programming language. Thus far, however, all of my projects have been conducted using R. This write-up is a demonstration of how Python can accomplish many of the same things, and interestingly, interact with R in the same environment (using RStudio).
+
+To start, let's take a look at the `quakes` dataset in R. The `quakes` dataset contains the locations of 1000 earthquakes near Fiji since 1964.
+```{r}
+#in R
+library(tidyverse)
+#saving quakes dataset as quakesR
+quakesR <- quakes
+#taking a peek at quakes
+glimpse(quakesR)
+```
+Using R, it's pretty easy to find out manipulate this data and find out about it.
+```{r}
+#finding summary statistics for depth/mag/stations in R
+quakesR %>% 
+  summarize_at(vars(depth, mag, stations),
+               funs(mean, sd))
+```
+
+What if we're interested in seeing what the distribution of `depth` looks like?
+```{r}
+#in R
+#making a histogram
+hist(quakes$depth, main = "Histogram of Depth", xlab = "Depth")
+```
+
+How about if we want to see a plot of the quakes' geographic locations?
+```{r fig.width=4, fig.height=4}
+#in R
+#making scatterplot
+plot(quakes$long, quakes$lat, xlab = "Longitude", ylab = "Latitude", main = "Latitude vs Longitude")
+```
+
+R is pretty cool! But what if we wanted to do all of this in Python instead? Instead of using Python to read in a new dataset, we can actually just use the dataset we've already brought into the global environment using a package called "reticulate."
+```{r}
+#in R
+#let's go ahead and load up reticulate
+library(reticulate)
+```
+
+Now we can use the R dataset (and for that matter, any variable/value created in R) in Python! To use objects from R, all we have to do is put "r." before the object in a Python code chunk
+```{python}
+#in Python
+#let's take a peek at quakesR
+r.quakesR.head()
+```
+
+Awesome! Now what if we wanted to find the mean/sd of `depth`, `mag`, and `stations` using Python like we did above?
+```{python}
+#in Python
+#importing library
+import pandas as pd
+
+#describe from the pandas library actually provides some additional summary stats as well!
+r.quakesR[['mag', 'depth', 'stations']].describe()
+```
+
+Pretty cool, these are the same results as in R.
+
+What about a histogram of `depth`?
+```{python}
+#in Python
+#importing library
+import matplotlib.pyplot as plt
+
+#making histogram of depth
+plt.hist(r.quakesR['depth'])
+plt.xlabel('Depth')
+plt.ylabel('Frequency')
+plt.show()
+```
+
+What about if we want a plot of the quakes' geographic locations using Python? Here's a pretty elaborate version!
+```{python}
+#in Python
+side, main = plt.subplots()
+fiji = plt.imread("http://valorielord.com/default/cache/file/D4256462-E44C-32F4-62C9A3C4AA762918_bodyimage.png")
+main.imshow(fiji, extent = [135,215,-40,0])
+#note that to use the quakesR dataset, we have to include "r."
+plt1 = main.scatter(x = r.quakesR['long'], y = r.quakesR['lat'], alpha = .2, c = r.quakesR['depth'])
+side.colorbar(plt1)
+plt.xlabel("Longitude")
+plt.ylabel("Latitude")
+plt.title("Latitude vs Longitude")
+
+plt.show()
+
+```
+
+To go a little farther using Python, what if we were interested in the mean magnitude of earthquakes above and below the median depth of all earthquakes?
+```{python}
+#in Python
+#importing library
+import numpy as np
+
+#lets create a variable called meddep (median depth)
+meddep = np.median(r.quakesR.depth)
+
+#the median depth is 247
+print(meddep)
+
+#finding mean of magnitude when depth is greater than meddep (deeper quakes)
+r.quakesR[r.quakesR.depth > meddep].mag.mean()
+
+#finding mean of magnitude when depth is less than meddep (shallower quakes)
+r.quakesR[r.quakesR.depth < meddep].mag.mean()
+```
+
+These results show us that when depth is greater than the median depth, the mean magnitude is less than that of when depth is less than the median depth!
+
+But what if we're interested in finding this out using R? We don't have to make a whole new `meddep` variable, Python and R can talk back and forth! To access variables that Python created in an R code chunk, all we need is "py$"
+```{r}
+#in R
+#calling on meddep from Python
+py$meddep
+
+#finding mean of magnitude when depth is greater than meddep (deeper quakes)
+mean(quakesR[quakesR$depth > py$meddep,]$mag)
+
+#finding mean of magnitude when depth is less than meddep (shallower quakes)
+mean(quakesR[quakesR$depth < py$meddep,]$mag)
+```
+
+These results are one and the same! That's all for this short demo, hope it was helpful in showing how R and Python can talk with each other in RStudio!
+
+<center>
+To wrap up, here's a pretty picture I took in Sydney!
+![](/img/IMG_9691.jpg){width=75% height=75%}
+</center>
+

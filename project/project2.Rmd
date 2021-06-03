@@ -1,0 +1,763 @@
+---
+title: 'Project 2: Modeling, Testing, and Predicting'
+author: "Bowen Song"
+date: '2020-11-24'
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+---
+
+```{r setup, include=FALSE}
+#packages
+library(knitr)
+library(tidyverse)
+library(lubridate)
+library(stringr)
+library(rstatix)
+library(lmtest)
+library(sandwich)
+library(plotROC)
+library(glmnet)
+
+#classification diagnostics
+class_diag<-function(probs,truth){
+  
+  if(is.numeric(truth)==FALSE & is.logical(truth)==FALSE) truth<-as.numeric(truth)-1
+  
+  tab<-table(factor(probs>.5,levels=c("FALSE","TRUE")),truth)
+  prediction<-ifelse(probs>.5,1,0)
+  acc=mean(truth==prediction)
+  sens=mean(prediction[truth==1]==1)
+  spec=mean(prediction[truth==0]==0)
+  ppv=mean(truth[prediction==1]==1)
+  f1=2*(sens*ppv)/(sens+ppv)
+  
+  ord<-order(probs, decreasing=TRUE)
+  probs <- probs[ord]; truth <- truth[ord]
+  
+  TPR=cumsum(truth)/max(1,sum(truth)) 
+  FPR=cumsum(!truth)/max(1,sum(!truth))
+  
+  dup<-c(probs[-1]>=probs[-length(probs)], FALSE)
+  TPR<-c(0,TPR[!dup],1); FPR<-c(0,FPR[!dup],1)
+  
+  n <- length(TPR)
+  auc<- sum( ((TPR[-1]+TPR[-n])/2) * (FPR[-1]-FPR[-n]) )
+
+  data.frame(acc,sens,spec,ppv,f1,auc)
+}
+
+knitr::opts_chunk$set(echo = TRUE, eval = TRUE,fig.align="center",warning=FALSE,message=FALSE,fig.width=8, fig.height=5, tidy.opts=list(width.cutoff=60), tidy=TRUE, R.options=list(max.print=120))
+```
+
+---
+
+### Setting Up
+
+```{R}
+# all data sources linked at the end
+#election results by county
+elect_untidy <- read_csv("presidential.csv")
+
+#COVID-19 by county
+cvd_untidy <- read_csv("us-counties2.csv")
+
+#mask use by county
+mask_untidy <- read_csv("mask-use-by-county2.csv")
+
+#educational attainment by county
+#data should discretized into dominant educational level by county
+education_untidy <- read_csv("Education.csv")
+
+#population data by county
+popdata_untidy <- read_csv("PopulationEstimates.csv")
+
+#poverty estimates by county
+povdata_untidy <- read_csv("PovertyEstimates.csv")
+
+#unemployment data and household income estimates by county
+unemp_untidy <- read_csv("Unemployment.csv")
+
+```
+
+---
+
+### Introduction
+
+A number of the datasets I have chosen for this project contain extraneous variables that will be removed while tidying the datasets as needed. 
+
+* The `cvd` dataset is US COVID-19 data organized by county collected by the NY Times. `cvd` contains 6 variables that will all be kept: `date`, `county`, `state`, `fips` (every county's unique numerical identifier), `cases` (cases of COVID-19), and `deaths` (deaths to COVID-19). For this project, only the information from 11-19-2020 will be kept, as that date provides the most up-to-date COVID-19 data (as of starting the project).
+
+* The `elect` dataset contains county-level data on the results of the 2020 presidential election and is provided by the NY Times. Of the 106 original variables, only 4 are kept: `fips`, `votes`, `results_trumpd`, `results_bidenj`, and `trumpwin` (binary variable where 1 = win for Trump, 0 = win for Biden). 
+
+* The `mask` dataset contains the proportion of people by `COUNTYFP` (county fips) who `always_mask`, `freq_mask`, `sometimes_mask`, `rarely_mask`, and `never_mask` when they could encounter people, and is provided by a survey conducted by Dynata for the NY Times.
+
+* The `education` dataset contains county-level information on the educational attainment for adults 25+ and is based on the 2014-18 American Community Survey. Of the original 47 variables, 6 are kept: `fips`, `PrimaryEdAttained` (a discretized variable reporting the primary education level attained by county), and `lessthanHS`, `HSonly`, `someCollegeorAssoc`, `Bachorgreater`, which are numeric counts of the number of people in each county with an educational attainment of less than high school, high school only, some college/associate degree, or a bachelor's or higher.
+
+* The `popdata` dataset contains county-level data on population and is provided by the Economic Research Service of the US Department of Agriculture. Of the original 166 variables, 5 are kept: `fips`, `pop2019`, `int_mig` (international migration), `dom_mig` (domestic migration), and `net_mig` (net migration).
+
+* The `povdata` dataset contains county-level information on different poverty metrics and is sourced from the US Census Bureau and Small Area Income and Poverty Estimates (SAIPE) Program. Of the original 34 variables, 2 are kept: `fips` and `pctpov` (the percent in poverty in 2018).
+
+* The `unemp` dataset contains county-level information on employment data and median household income and is provided by the Economic Research Service of the US Department of Agriculture. Of the original 88 variables, 4 are kept: `fips`, `emp` (employment counts), `unemp` (unemployment counts), `med_inc` (median household income).
+
+Regardless of which side of the political spectrum you stand on, I think it's fair to say that the 2020 presidential election was one for the history books. With that in mind, I plan to use the above data to determine if there was any method to the madness; county-by-county (all 3000+), I'm hoping this project can lead us to a better understanding of what may have swung the election to a Biden victory. Off the bat, I am expecting to see that counties more heavily impacted by COVID-19 to lean Biden - Trump has been vocally callous in his response to COVID-19 and I'm expecting this to turn some away from him. In addition, I am expecting counties with higher proportions of people who `always_mask` lean Biden; Trump has actively downplayed the efficacy of masks since the onset of the pandemic and as such, I'm expecting this to be a potential indicator of the county's preference for Trump. It's worth noting that with issues as complicated as these, it's very difficult to draw any meaningful conclusions, and even if the tests run in this project show significant effects, there may still be additional confounding variables worth considering. Let's get into it!
+
+---
+
+### Tidying Datasets
+
+Cleaning `cvd`:
+```{R}
+#filtering most up-to-date COVID-19 data
+cvd <- cvd_untidy %>% 
+  filter(date == as.Date("2020-11-19"))
+
+glimpse(cvd)
+```
+Cleaning `elect`:
+```{R}
+elect <- elect_untidy %>% 
+  group_by(fips) %>% 
+  summarize_if(is.numeric, sum, na.rm = T) %>% 
+  select(fips, votes, results_trumpd, results_bidenj) %>% 
+  #plurality
+  #cut out other candidates because none of them compete with trump/biden for plurality
+  mutate(trumpwin = ifelse(results_trumpd/votes > results_bidenj/votes, 1, 0))
+
+glimpse(elect)
+```
+Cleaning `mask`:
+```{R}
+mask <- mask_untidy %>% 
+  #renaming variables for clarity
+  rename(never_mask = NEVER,
+         rarely_mask = RARELY,
+         sometimes_mask = SOMETIMES,
+         freq_mask = FREQUENTLY,
+         always_mask = ALWAYS,
+         fips = COUNTYFP)
+
+glimpse(mask)
+```
+Cleaning `education`:
+```{R}
+#discretized data -> dominant type of education per county
+education <- education_untidy %>% 
+  rename(fips = `FIPS Code`,
+         lessthanHS = `Less than a high school diploma, 2014-18`,
+         HSonly = `High school diploma only, 2014-18`,
+         someCollegeorAssoc = `Some college or associate's degree, 2014-18`,
+         Bachorgreater = `Bachelor's degree or higher, 2014-18`) %>% 
+  select(fips, lessthanHS, HSonly, someCollegeorAssoc, Bachorgreater) %>% 
+  mutate(PrimaryEdAttained = case_when(
+    lessthanHS > HSonly & lessthanHS > someCollegeorAssoc & lessthanHS > Bachorgreater ~ "lessthanHS",
+    HSonly > lessthanHS & HSonly > someCollegeorAssoc & HSonly > Bachorgreater ~ "HSonly",
+    someCollegeorAssoc > lessthanHS & someCollegeorAssoc > HSonly & someCollegeorAssoc > Bachorgreater ~ "someCollegeorAssoc",
+    Bachorgreater > lessthanHS & Bachorgreater > HSonly & Bachorgreater > someCollegeorAssoc ~ "Bachorgreater")) %>% 
+  #removes rows for which there is no census data on educational attainment
+  na.omit() %>% 
+  select(fips, PrimaryEdAttained, everything())
+
+glimpse(education)
+```
+Cleaning `popdata`:
+```{R}
+popdata <- popdata_untidy %>% 
+  rename(fips = FIPStxt,
+         pop2019 = POP_ESTIMATE_2019,
+         int_mig = INTERNATIONAL_MIG_2019,
+         dom_mig = DOMESTIC_MIG_2019,
+         net_mig = NET_MIG_2019) %>% 
+  select(fips, pop2019, int_mig, dom_mig, net_mig)
+
+glimpse(popdata)
+```
+Cleaning `povdata`:
+```{R}
+povdata <- povdata_untidy %>% 
+  rename(fips = FIPStxt,
+         pctpov = PCTPOVALL_2018) %>% 
+  select(fips, pctpov)
+
+glimpse(povdata)
+```
+Cleaning `unemp`:
+```{R}
+unemp <- unemp_untidy %>% 
+  rename(fips = FIPStxt,
+         emp = Employed_2019,
+         unemp = Unemployed_2019,
+         med_inc = Median_Household_Income_2018) %>% 
+  select(fips, emp, unemp, med_inc)
+
+glimpse(unemp)
+```
+
+---
+
+### Joining Data
+
+```{R}
+#join cvd and elect by county
+cvdelect <- cvd %>% 
+  inner_join(elect, by = "fips")
+
+#join cvdelect and mask by county
+cvdelectmask <- cvdelect %>% 
+  inner_join(mask, by = "fips")
+
+#join cvdelectmask and education by county
+cvdelectmasked <- cvdelectmask %>% 
+  inner_join(education, by = "fips")
+
+#join cvdelectmasked and popdata by county
+cvdelectmaskedpop <- cvdelectmasked %>% 
+  inner_join(popdata, by = "fips")
+
+#join cvdelectmaskedpop and povdata by county
+cvdelectmaskedpoppov <- cvdelectmaskedpop %>% 
+  inner_join(povdata, by = "fips")
+
+#join cvdelectmaskedpoppov and unemp by county
+fulldata <- cvdelectmaskedpoppov %>% 
+  inner_join(unemp, by = "fips") %>% 
+  na.omit()
+
+glimpse(fulldata)
+```
+
+---
+
+### MANOVA/ANOVA
+
+```{R}
+#setting up for MANOVA assumptions
+groups <- fulldata$trumpwin
+DVs <- fulldata %>% 
+  select(cases, deaths, always_mask, Bachorgreater, net_mig, pctpov, unemp, med_inc, pop2019)
+
+#Assumption 1: test for multivariate normality among each group (null H0: assumption met, DVs exhibit multivariate normality)
+#p-values < .05, assumption is not met, data is not normal
+sapply(split(DVs, groups), mshapiro_test)
+
+#computing MANOVA for cases, deaths, always_mask, education attainment, net migration, % poverty, employment data, median income, and population vs trumpwin (1 = trumpwin, 0 = bidenwin)
+manova <- manova(cbind(cases, deaths, always_mask, Bachorgreater, net_mig, pctpov, unemp, med_inc, pop2019) ~ trumpwin, data = fulldata)
+summary(manova)
+
+#univariate ANOVA across groups
+summary.aov(manova)
+
+#across the whole set of tests, the probability we have made at least one Type I error is: 1-P(no Type I) = 1-.95^x
+#prob Type I error = .40126
+1-.95^10
+
+#Bonferroni correction is: a_overall/# tests
+#a' = .005
+.05/10
+```
+Before getting into the test results, it should be noted that these data do not meet all of the MANOVA assumptions - specifically, the multivariate Shapiro-Wilk normality test shows the data does not exhibit multivariate normality. That being said, the results of this MANOVA test suggest that at least one response variable (COVID-19 `cases`/`deaths`, `always_mask`, education attainment (`Bachorgreater`), migration (`net_mig`), poverty percentages (`pctpov`), employment status (`unemp`), income (`med_inc`), and population (`pop2019`)) significantly differs between the groups of `trumpwin`. (F = 160.59, p < 2.2e-16)
+
+At this point, individual ANOVA tests are run for each response variable. In total, 10 hypothesis tests were completed, and the probability that we have made at least one Type I error is 0.40126. To keep the overall significance level at 0.05, an adjusted significance level, a', of 0.005 should be utilized - this adjusted significance level was determined by the Bonferroni correction. No post-hoc tests were conducted here because we already know that the two groups differ based on the ANOVA tests alone; there are only two possible groups in the explanatory variable `trumpwin`!
+
+Taking a closer look at the ANOVA tests for each individual response variable, *after adjusting for the probability of a Type I error*, all ANOVA tests except for the one between net migration (`net_mig`) and `trumpwin` are significant.
+
+#### COVID-19 `cases`/`deaths`
+
+- Holding all other response variables constant, the mean number of COVID-19 `cases` significantly differs between counties that Trump won and counties that Biden won. (F = 325.11, p < 2.2e-16)
+
+- Holding all other response variables constant, the mean number of `deaths` to COVID-19 significantly differs between counties that Trump won and counties that Biden won. (F = 350.8, p < 2.2e-16)
+
+#### Masking
+
+- Holding all other response variables constant, the mean proportion of people who `always_mask` significantly differs between counties that Trump won and counties that Biden won. (F = 707.62, p < 2.2e-16)
+
+#### Educational attainment
+
+- Holding all other response variables constant, the mean number of people who report a bachelor's degree or higher (`Bachorgreater`) as their highest level of education attained significantly differs between counties that Trump won and counties that Biden won. (F = 500.97, p < 2.2e-16)
+
+#### Migration
+
+- Holding all other response variables constant, the mean number of net migrations (`net_mig`) **DOES NOT** significantly differ between counties that Trump won and counties that Biden won. (F = 4.1292, p = .04224)
+
+#### Poverty
+
+- Holding all other response variables constant, the mean percentage of people of all ages in poverty (`pctpov`) significantly differs between counties that Trump won and counties that Biden won. (F = 35.313, p = 3.119e-09)
+
+#### Employment Status
+
+- Holding all other response variables constant, the mean number of people who are unemployed (`unemp`) significantly differs between counties that Trump won and counties that Biden won. (F = 374.87, p < 2.2e-16)
+
+#### Median Income
+
+- Holding all other response variables constant, the mean median household income (`med_inc`) significantly differs between counties that Trump won and counties that Biden won. (F = 120.29, p < 2.2e-16)
+
+#### Population
+
+- Holding all other response variables constant, the mean population (`pop2019`) significantly differs between counties that Trump won and counties that Biden won. (F = 434.51, p < 2.2e-16)
+
+---
+
+### Randomization Test
+#### Calculating mean difference in the proportion of `always_mask` between counties Trump won and counties Biden won
+```{R}
+#finding the test statistic: observed difference in means
+#counties that Trump won have 17.435% fewer people who always mask compared to counties that Biden won
+fulldata %>% 
+  group_by(trumpwin) %>% 
+  summarize(means = mean(always_mask)) %>% 
+  summarize(mean_diff = diff(means))
+
+#randomization test
+#generating random distribution - makes no assumptions about the data
+rand_dist <- vector()
+for(i in 1:5000){
+  new <- data.frame(always_mask = sample(fulldata$always_mask),
+                    trumpwin = fulldata$trumpwin)
+  rand_dist[i] <- mean(new[new$trumpwin == 1,]$always_mask)-
+                  mean(new[new$trumpwin == 0,]$always_mask)
+}
+
+#plot visualizing null distribution and test statistic
+{hist(rand_dist,main="Null Distribution",ylab="", xlim = c(-.2, .2)); abline(v = c(-.17435, .17435),col="red")}
+
+#two-tailed p-value
+#p-value = 0, reject the null hypothesis
+mean(rand_dist > .17435 | rand_dist < -.17435)
+```
+This randomization test simulated the mean difference in proportion of people who `always_mask` between counties Trump won and counties Biden won. 
+
+- $H_0: \mu_{maskTrump} - \mu_{maskBiden} = 0$
+
+- $H_{\alpha}: \mu_{maskTrump} - \mu_{maskBiden} \neq 0$
+
+The two-tailed p-value calculated represents the probability of observing a mean difference as extreme as the real mean difference under a randomization distribution. In this case, the two-tailed p-value of 0 tells us that there is a 0% chance of observing a mean difference in proportion of people who `always_mask` of 0.17435 under random conditions. 
+
+As such, we reject the null hypothesis that there is no difference/association in the mean proportions of people that `always_mask`s between counties Trump/Biden won. In other words, the true difference in means of people who `always_mask` between counties Trump won and counties Biden won is not equal to 0. This can be visualized nicely on the histogram of the null distribution; the vertical lines demonstrating the test statistic are extremely far away from the random distribution. 
+
+---
+
+### Linear Regression
+#### Predicting COVID-19 `deaths` from `trumpwin` and number of people `unemp`loyed
+```{R}
+#mean centering unemp
+fulldata$unemp_c <- fulldata$unemp - mean(fulldata$unemp)
+
+#linear regression
+linearfit <- lm(deaths ~ trumpwin * unemp_c, data = fulldata)
+summary(linearfit)
+
+#plot of linearfit
+fulldata %>% 
+  mutate(trumpwin = ifelse(trumpwin == 1, "yes", "no")) %>% 
+  ggplot(aes(x = unemp, y = deaths, color = trumpwin)) +
+    geom_smooth(method = "lm") +
+    geom_vline(xintercept = mean(fulldata$unemp), linetype = "dashed") +
+    scale_x_log10() +
+    labs(title = "Plot of linear regression", subtitle = "Deaths vs Unemployment")
+```
+Interpretations:
+
+- `(Intercept)`: *The predicted number of `deaths` to COVID-19 for counties Trump won and with average unemployment is 91.429 people.*
+
+- `trumpwin`: *For counties with average unemployment, there are 25.18 fewer `deaths` to COVID-19 in counties Trump won compared to counties Biden won.*
+
+- `unemp_c`: *On average, counties that Biden won show an increase of .038 `deaths` for every one more person unemployed.*
+
+- `trumpwin:unemp_c`: *The slope of unemployment on `deaths` to COVID-19 is .003 lower for counties Trump won compared to counties Biden won.*
+
+#### Checking assumptions: linearity, normality, homoscedasticity
+
+```{R}
+#checking linearity
+#fails this assumption, the data is not linear
+fulldata %>% 
+  ggplot(aes(x = unemp, y = deaths)) +
+    geom_point() +
+    scale_x_log10()
+
+#checking normality with Kolmogorov-Smirnov test
+#Ho: true distribution is normal
+#p-value < .05, we reject the null hypothesis
+#fails this assumption, the data is not normal
+ks.test(linearfit$residuals, "pnorm", mean=0, sd(linearfit$residuals))
+
+#eyeballing homoscedasticity
+#almost certainly not homoscedastic
+plot(linearfit$fitted.values, linearfit$residuals); abline(h = 0, col = "red")
+
+#checking homoscedasticity with Breusch-Pagan test
+#Ho: the data is homoscedastic
+#p-value < .05, we reject the null hypothesis
+#fails this assumption, the data is not homoscedastic
+bptest(linearfit)
+```
+Based on the results of these tests and visualizations, this data is non-linear, not normally distributed, and not homoscedastic. As such, we'll run a linear regression with robust and bootstrapped standard errors.
+
+---
+
+#### Running linear regression with robust standard errors
+
+```{R}
+#linear regression with robust SEs
+coeftest(linearfit, vcov = vcovHC(linearfit))
+```
+After re-running the linear regression with robust standard errors, only the `(Intercept)` and `unemp`loyment estimates remain significant with p-values of 3.59e-05 and 4.603e-11, respectively. Based on the adjusted $R^2$ of the linear regression, approximately 78.6% of the variation in COVID-19 deaths can be explained by our model. 
+
+#### Running linear regression with bootstrapped standard errors
+
+```{R}
+#bootstrap SEs by resampling rows
+row_resample <- replicate(5000, {
+  boot_row <- sample_frac(fulldata, replace = T)
+  regression <- lm(deaths ~ trumpwin * unemp_c, data = boot_row)
+  coef(regression)
+})
+
+#SEs from original linear regression (normal SEs)
+coeftest(linearfit)[, 1:2]
+
+#SEs from second linear regression (robust SEs)
+coeftest(linearfit, vcov = vcovHC(linearfit))[, 1:2]
+
+#estimated SEs by resampling rows
+row_resample %>%
+  t %>% 
+  as.data.frame %>% 
+  summarize_all(sd)
+```
+After re-running the linear regression with bootstrapped standard errors (determined by resampling rows), the `(Intercept)` and `unemp`loyment estimates remain significant, but we cannot conclusively say whether `trumpwin` and the interaction between `trumpwin` and `unemp` are significant based on our bootstrapped model. 
+
+As a rule, smaller standard errors result in smaller p-values/larger t-values and larger standard errors result in larger p-values/smaller t-values. With that in mind, we can make the following comparisons:
+
+- *model with normal SEs: smallest SEs out of the three models*
+
+  + all estimates are significant; all p-values are < .05
+  
+- *model with robust SEs: largest SEs out of the three models*
+
+  + the `(Intercept)` and `unemp`loyment estimates are significant; respective p-values are < .05
+  
+- *model with bootstrapped SEs: SEs are larger than the model with normal SEs, but smaller than the model with robust SEs*
+
+  + the `(Intercept)` and `unemp`loyment estimates remain significant
+  
+  + `trumpwin` and `trumpwin:unemp` may or may not be significant; the bootstrapped SEs inform us that the p-values should be less than those of the model with robust SEs, but we don't know if they are small enough to be significant
+
+---
+
+### Logistic Regression `deaths`/`always_mask`
+#### Predicting `trumpwin` from `deaths` and `always_mask`; main effects only
+
+```{R}
+#running logistic regression
+logisticfit1 <- glm(trumpwin ~ deaths + always_mask, data = fulldata, family = "binomial")
+coeftest(logisticfit1)
+
+#exponentiate coefficients to get odds from log-odds
+exp(coef(logisticfit1))
+```
+Interpretations:
+
+- `(Intercept)`: When 0% of people in a county `always_mask` and there are 0 `deaths` to COVID-19 in that county, the predicted odds that Trump wins is 465.645.
+
+- `deaths`: When controlling for proportion of people who `always_mask` in each county, there is a significant effect of the number of `deaths` to COVID-19 on whether Trump or Biden won a county. Based on the exponentiated coefficient, we can determine that every additional death to COVID-19 in a county multiplies the odds Trump wins in that county by .9954. *In other words, the odds that Trump wins a county decrease by 0.46% for every additional death to COVID-19 in that county.*
+
+- `always_mask`: When controlling for the number of `deaths` to COVID-19, there is a significant effect of the proportion of people who `always_mask` on whether a county voted for Trump or Biden. Based on the exponentiated coefficient, we can determine that every unit increase in the proportion of people who always mask multiplies the odds Trump wins by .0006. *In other words, the odds that Trump wins a county decrease by a whopping 99.94% for every one unit increase in the proportion of people who always mask in that county.*
+
+#### Computing a confusion matrix for `logisticfit1`
+
+```{R}
+#getting predicted probabilities from logisticfit1
+logisticfit1probs <- predict(logisticfit1, type = "response")
+
+#getting predicted log-odds from logisticfit1
+logisticfit1logit <- predict(logisticfit1, type = "link")
+
+#using .5 as the threshold to predict a Trump win
+table(predict = as.numeric(logisticfit1probs > .5),
+      truth = fulldata$trumpwin) %>% 
+  addmargins()
+
+#Accuracy: (true pos + true neg)/total
+#probability of predicting a correct win overall
+(170+2511)/3103
+
+#TPR (Sensitivity): true pos/total pos
+#probability of predicting a Trump win in a county he actually won
+2511/2574
+
+#TNR (Specificity): true neg/total neg
+#probability of predicting a Biden win in a county he actually won
+170/529
+
+#PPV (Precision): true pos/pred pos
+#proportion of true Trump wins over those the model predicts he wins
+2511/2870
+
+#all values in one place using classification diagnostics function
+class_diag(logisticfit1probs, fulldata$trumpwin)
+```
+
+- **Accuracy**: Represents the probability of predicting a correct win overall. This model has an accuracy of .864, meaning 86.4% of its predictions were correct.
+
+  - $\frac{TruePos + TrueNeg}{Total}$
+
+- **TPR (Sensitivity)**: Represents the probability of predicting a Trump win in a county Trump actually won. This model's TPR is .9755, meaning 97.5% of the counties Trump won were correctly predicted.
+
+  - $\frac{TruePos}{TotalPos}$
+  
+- **TNR (Specificity)**: Represents the probability of predicting a Biden win (Trump loss) in a county Biden actually won. This model's TNR is .321, meaning only 32.1% of the counties Biden won/Trump lost were correctly predicted.
+
+  - $\frac{TrueNeg}{TotalNeg}$
+  
+- **PPV (Precision)**: Represents the proportion of true Trump wins over those that the model predicts he wins. This model's PPV is .875, meaning counties that Trump actually won represent 87.5% of those the model predicts for Trump.
+
+  - $\frac{TruePos}{PredPos}$
+
+- **AUC (area under the curve)**: A way to quantify how well the model predicts outcomes overall - this quantification is based on a summarization of the trade-off between TPR and TNR, sensitivity and specificity, respectively. The AUC is a better alternative to accuracy, which can easily be duped! As a rule of thumb, the closer the AUC is to 1, the better the model predicts the outcome. This model's AUC is .839, which falls into the "good" classification.
+
+#### Creating a density plot for `logisticfit1`
+
+```{R}
+fulldata %>% 
+  mutate(trumpwin = as.factor(trumpwin)) %>% 
+  ggplot() + 
+    geom_density(aes(logisticfit1logit, color = trumpwin, fill = trumpwin), alpha=.4) +
+    theme(legend.position=c(.70, .85)) + 
+    geom_vline(xintercept=0) +
+    labs(x = "predictor (logit/log-odds)", title = "Density plot of log-odds", subtitle = "Trump win = 1, Biden win = 0")
+```
+
+#### Plotting ROC curve and calculating AUC
+
+```{R}
+#ROC curve
+ROCplot <- ggplot(fulldata) + 
+  geom_roc(aes(d = trumpwin, m = logisticfit1probs), n.cuts=0) 
+ROCplot
+
+#verifying AUC from above
+calc_auc(ROCplot)
+```
+The ROC curve is a visualization of the trade-off between TPR and TNR and the AUC is just the area under the ROC curve! A perfect model will generate an ROC curve that is a 90 degree angle, leading first up the y-axis and then across the x-axis; this results in a computed AUC of 1. Re-calculating the AUC using the calc_auc function confirms this model's AUC to be .839, which is "good" but not "great".
+
+<center>
+
+__General AUC Interpretations__
+
+0.9 - 1.0: Great
+
+0.8 - 0.9: Good
+
+0.7 - 0.8: Fair
+
+0.6 - 0.7: Poor
+
+0.5 - 0.6: Bad
+
+</center>
+
+---
+
+### Logistic regression `fulldata`
+#### Predicting `trumpwin` from all variables; main effects only
+
+```{R}
+#removing extraneous variables
+fulldata2 <- fulldata %>% 
+  select(-date, -county, -state, -fips, -results_trumpd, -results_bidenj, -unemp_c, -net_mig) %>% 
+  na.omit()
+#running logistic regression
+logisticfit2 <- glm(trumpwin ~ ., data = fulldata2, family = "binomial")
+coeftest(logisticfit2)
+
+#exponentiate coefficients to odds from log-odds
+exp(coef(logisticfit2))
+```
+
+#### Computing in-sample classification diagnostics
+
+```{R}
+#saving predicted probabilities
+logisticfit2probs <- predict(logisticfit2, type = "response")
+
+#running classification diagnostics (in-sample)
+class_diag(logisticfit2probs, fulldata$trumpwin)
+```
+*It's important to note that these classification diagnostics represent only in-sample classifications and do not show how the model may predict observations out of sample.*
+
+- **Accuracy**: Represents the probability of predicting a correct win overall. This model has an accuracy of .901, meaning 90.1% of its predictions were correct.
+
+  - $\frac{TruePos + TrueNeg}{Total}$
+
+- **TPR (Sensitivity)**: Represents the probability of predicting a Trump win in a county Trump actually won. This model's TPR is .9701, meaning 97.01% of the counties Trump won were correctly predicted.
+
+  - $\frac{TruePos}{TotalPos}$
+  
+- **TNR (Specificity)**: Represents the probability of predicting a Biden win (Trump loss) in a county Biden actually won. This model's TNR is .567, meaning only 56.7% of the counties Biden won/Trump lost were correctly predicted.
+
+  - $\frac{TrueNeg}{TotalNeg}$
+  
+- **PPV (Precision)**: Represents the proportion of true Trump wins over those that the model predicts he wins. This model's PPV is .916, meaning counties that Trump actually won represent 91.6% of those the model predicts for Trump.
+
+  - $\frac{TruePos}{PredPos}$
+
+- **AUC (area under the curve)**: A way to quantify how well the model predicts outcomes overall - this quantification is based on a summarization of the trade-off between TPR and TNR, sensitivity and specificity, respectively. This model's AUC is .923, which falls into the "great" classification.
+
+---
+
+#### 10-fold cross-validation on `logisticfit2`
+
+```{R}
+#setting number of folds
+k = 10
+
+#putting rows of dataset in random order
+fd2CV <- fulldata2 %>% 
+  sample_frac
+
+#creating fold labels
+fd2folds <- ntile(1:nrow(fulldata2), n = 10)
+
+#empty diagnostics placeholder
+fd2diags <- NULL
+
+#10-fold CV
+for(i in 1:k){
+  fd2train <- fd2CV[fd2folds!=i,]
+  fd2test <- fd2CV[fd2folds==i,]
+  fd2truth <- fd2test$trumpwin
+  
+  fd2fit <- glm(trumpwin ~ ., data = fd2train, family = "binomial")
+  fd2probs <- predict(fd2fit, newdata = fd2test, type = "response")
+  
+  fd2diags <- rbind(fd2diags, class_diag(fd2probs, fd2truth))
+}
+
+#finding average classification diagnostics out-of-sample
+summarize_all(fd2diags, mean)
+```
+*These classification diagnostics show how the previous model may predict observations out of sample. Across all diagnostics, the model is slightly worse at predicting out-of-sample, but not by a significant margin. Notably, the AUC only decreases from .923 to .916.*
+
+- **Accuracy**: Out of sample, this model has an accuracy of .898, meaning 89.8% of its predictions were correct. (in sample: .901)
+
+  - $\frac{TruePos + TrueNeg}{Total}$
+
+- **TPR (Sensitivity)**: Out of sample, this model's TPR is .968, meaning 96.8% of the counties Trump won were correctly predicted. (in sample: .9701)
+
+  - $\frac{TruePos}{TotalPos}$
+  
+- **TNR (Specificity)**: Out of sample, this model's TNR is .560, meaning only 56.0% of the counties Biden won/Trump lost were correctly predicted. (in sample, .567)
+
+  - $\frac{TrueNeg}{TotalNeg}$
+  
+- **PPV (Precision)**: Out of sample, this model's PPV is .915, meaning counties that Trump actually won represent 91.5% of those the model predicts for Trump. (in sample: .916)
+
+  - $\frac{TruePos}{PredPos}$
+
+- **AUC (area under the curve)**: Out of sample, this model's AUC is .916, which still falls into the "great" classification. (in sample: .923)
+
+---
+
+#### LASSO to choose a simpler model
+##### May lead to better predictions out-of-sample
+
+```{R}
+#scaled fd2 predictors
+fd2_preds <- model.matrix(trumpwin ~ ., data = fulldata2)[, -1] %>% 
+  scale
+
+#trumpwin
+fd2_response <- as.matrix(fulldata2$trumpwin)
+
+#CV to select lambda + 1se
+cv <- cv.glmnet(fd2_preds, fd2_response, family = "binomial")
+
+#lasso
+lasso_fit <- glmnet(fd2_preds, fd2_response, family = "binomial", lambda = cv$lambda.1se)
+coef(lasso_fit)
+```
+The non-zero coefficient estimates of the LASSO regression (variables to be retained) are those of votes, never_mask, rarely_mask, sometimes_mask, always_mask, certain levels of primary education level attained (HSonly, lessthanHS, someCollegeorAssoc), dom_mig (domestic migration), pctpov (percent in poverty), and med_inc (median income). Utilizing these variables to create a model should result in improved predictions out-of-sample. To verify this, we'll run another 10-fold CV using only the variables LASSO suggests and compare the AUCs between each model.
+
+#### 10-fold cross-validation on LASSO model
+
+```{R}
+#creating dummies for significant primary education levels
+fulldata2dummies <- fulldata2 %>% 
+  mutate(PEdHSonly = ifelse(fulldata2$PrimaryEdAttained == "HSonly", 1, 0),
+         PEdlessthanHS = ifelse(fulldata2$PrimaryEdAttained == "lessthanHS", 1, 0),
+         PEdsomeCollegeorAssoc = ifelse(fulldata2$PrimaryEdAttained == "someCollegeorAssoc", 1, 0))
+
+#shuffling rows of dataset
+lassodata <- fulldata2dummies %>% 
+  sample_frac
+
+#creating fold labels
+lassofolds <- ntile(1:nrow(lassodata), n = 10)
+
+#creating empty placeholder
+lassodiags <- NULL
+
+#10-fold CV
+k = 10
+for(i in 1:k){
+  trainlasso <- lassodata[lassofolds !=i,]
+  testlasso <- lassodata[lassofolds == i,]
+  truthlasso <- testlasso$trumpwin
+  
+  lassofit <- glm(trumpwin ~ votes + never_mask + rarely_mask + sometimes_mask + always_mask + PEdHSonly + PEdlessthanHS + PEdsomeCollegeorAssoc + dom_mig + pctpov + med_inc, data = trainlasso, family = "binomial")
+  lassoprobs <- predict(lassofit, newdata = testlasso, type = "response")
+  
+  lassodiags <- rbind(lassodiags, class_diag(lassoprobs, truthlasso))
+}
+
+#summarizing results
+summarize_all(lassodiags, mean)
+```
+*These classification diagnostics are pretty interesting. Across all diagnostics, the model is slightly worse the original logistic regression at predicting both in- and out-of-sample, but not by a significant margin. Theoretically, because of its more conservative estimate, the LASSO model should result in improved out-of-sample predictions compared to that of the full model; while this is indeed the case here, the improvement is only marginal. Notably, when compared to the out-of-sample AUC of the full model, this AUC only improves from .9156 to .9158.*
+
+- **Accuracy**: The LASSO model has an accuracy of .8956 out of sample, meaning 89.56% of its predictions were correct. This is lower than that of both the in- and out-of-sample full model predictions, which had accuracies of .901 and .898, respectively.
+
+  - $\frac{TruePos + TrueNeg}{Total}$
+
+- **TPR (Sensitivity)**: The LASSO model has a TPR of .9675 out of sample, meaning 96.75% of the counties Trump won were correctly predicted. This is lower than that of both the in- and out-of-sample full model predictions, which had TPRs of .9676 and .9701, respectively.
+
+  - $\frac{TruePos}{TotalPos}$
+  
+- **TNR (Specificity)**: The LASSO model has a TNR of .5471 out of sample, meaning 54.71% of the counties Biden won/Trump lost were correctly predicted. This is lower than that of both the in- and out-of-sample full model predictions, which had TNRs of .560 and .567, respectively.
+
+  - $\frac{TrueNeg}{TotalNeg}$
+  
+- **PPV (Precision)**: The LASSO model has a PPV of .912 out of sample, meaning counties that Trump actually won represent 91.2% of those the model predicts for Trump. This is lower than that of both the in- and out-of-sample full model predictions, which had PPVs of .915 and .916, respectively.
+
+  - $\frac{TruePos}{PredPos}$
+
+- **AUC (area under the curve)**: The LASSO model has an AUC of .9158 out of sample. This is very slightly improved compared to the out-of-sample AUC of the full model (.9156). Compared to the in-sample AUC of the full model, the LASSO model's AUC is lower, but this is to be expected; out-of-sample predictions are rarely as good as those in-sample. That being said, all three AUCs (from the full model and LASSO model) are "great".
+
+---
+
+### Links to Datasets
+
+* COVID-19 by county: [`cvd_untidy`](https://github.com/nytimes/covid-19-data/blob/master/us-counties.csv)
+
+* 2020 presidential election results by county: [`elect`](https://github.com/favstats/USElection2020-NYT-Results)
+
+* Mask use by county: [`mask`](https://github.com/nytimes/covid-19-data/tree/master/mask-use)
+
+* Educational attainment by county: [`education`](https://www.ers.usda.gov/data-products/county-level-data-sets/download-data/)
+
+* Population data by county: [`popdata`](https://www.ers.usda.gov/data-products/county-level-data-sets/download-data/)
+
+* Poverty metrics by county: [`povdata`](https://www.ers.usda.gov/data-products/county-level-data-sets/download-data/)
+
+* Unemployment data by county: [`unemp`](https://www.ers.usda.gov/data-products/county-level-data-sets/download-data/)
+
+```{R, echo=F}
+sessionInfo()
+Sys.time()
+Sys.info()
+```

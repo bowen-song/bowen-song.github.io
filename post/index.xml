@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Posts on Bowen Song</title>
+    <link>/post/</link>
+    <description>Recent content in Posts on Bowen Song</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-US</language>
+    <lastBuildDate>Wed, 13 Jan 2021 00:00:00 +0000</lastBuildDate><atom:link href="/post/index.xml" rel="self" type="application/rss+xml" />
+    <item>
+      <title>Mullvad with WireGuard &#43; Pi-hole and Unbound</title>
+      <link>/post/2021/01/13/mullvad-with-wireguard-pi-hole-and-unbound/</link>
+      <pubDate>Wed, 13 Jan 2021 00:00:00 +0000</pubDate>
+      
+      <guid>/post/2021/01/13/mullvad-with-wireguard-pi-hole-and-unbound/</guid>
+      <description>Hi, everyone! This post is a bit different from some of the others I’ve written - rather than being about data science, this one’s more about a network management project I’ve been working on for the last few weeks. Although the individual documentation is plentiful for each of the three components we’ll be implementing, there were inevitably some hangups when bringing them all together. As such, this guide is meant to be a walkthrough for anyone who might be trying to accomplish the same set up as me (and also to serve as a reminder of how I set this thing up in case I ever have to do it again).</description>
+    </item>
+    
+    <item>
+      <title>K-mers and restriction enzymes with Python</title>
+      <link>/post/2020/12/11/k-mers-and-restriction-enzymes-with-python/</link>
+      <pubDate>Fri, 11 Dec 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/post/2020/12/11/k-mers-and-restriction-enzymes-with-python/</guid>
+      <description>Regular expressions (regex) are really cool. With them, you can easily (or sometimes not-so-easily) identify patterns in text. Using the “re” module, Python can understand regex and we can do a lot with it. This isn’t a tutorial for regex, but a basic understanding of regex will make the later bits with restriction enzyme binding sites a bit more digestible. Here’s a site that helped me grasp the basics: Python Regular Expressions</description>
+    </item>
+    
+    <item>
+      <title>Showcasing how R and Python can talk!</title>
+      <link>/post/2020/12/10/showcasing-how-r-and-python-can-talk/</link>
+      <pubDate>Thu, 10 Dec 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/post/2020/12/10/showcasing-how-r-and-python-can-talk/</guid>
+      <description>In more ways than one, Python is a very powerful programming language. Thus far, however, all of my projects have been conducted using R. This write-up is a demonstration of how Python can accomplish many of the same things, and interestingly, interact with R in the same environment (using RStudio).
+To start, let’s take a look at the quakes dataset in R. The quakes dataset contains the locations of 1000 earthquakes near Fiji since 1964.</description>
+    </item>
+    
+    <item>
+      <title>Exploring blogdown with first post</title>
+      <link>/post/2020/12/07/exploring-with-first-post/</link>
+      <pubDate>Mon, 07 Dec 2020 00:00:00 +0000</pubDate>
+      
+      <guid>/post/2020/12/07/exploring-with-first-post/</guid>
+      <description>Adding some random text here: asdfasdfasdf
+Linking things!
+Project 1
+Link to Google
+#this is an R code chunk library(tidyverse) ## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.0 ── ## ✓ ggplot2 3.3.2 ✓ purrr 0.3.4 ## ✓ tibble 3.0.4 ✓ dplyr 1.0.2 ## ✓ tidyr 1.1.2 ✓ stringr 1.4.0 ## ✓ readr 1.4.0 ✓ forcats 0.5.0 ## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ── ## x dplyr::filter() masks stats::filter() ## x dplyr::lag() masks stats::lag() library(ggplot2) msleep %&amp;gt;% ggplot(aes(x = sleep_total, y = sleep_rem)) + geom_point() ## Warning: Removed 22 rows containing missing values (geom_point).</description>
+    </item>
+    
+  </channel>
+</rss>
