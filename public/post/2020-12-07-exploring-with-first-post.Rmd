@@ -1,0 +1,37 @@
+---
+title: Exploring blogdown with first post
+author: Bowen Song
+date: '2020-12-07'
+slug: exploring-with-first-post
+categories: []
+tags: []
+description: ''
+---
+Adding some random text here: asdfasdfasdf
+
+**Linking things!**
+
+[Project 1](/projects/project1/)
+
+[Link to Google](https://www.google.com)
+
+```{r}
+#this is an R code chunk
+library(tidyverse)
+library(ggplot2)
+
+msleep %>% 
+  ggplot(aes(x = sleep_total, y = sleep_rem)) +
+    geom_point()
+```
+
+```{python}
+#this is a python code chunk
+print("hello world")
+```
+
+
+<center>
+Here's a cool little cove we found in the Galapagos Islands :)
+![](/img/IMG_6626.JPG){width=75% height=75%}
+</center>
