@@ -1,0 +1,48 @@
+baseurl = "/"
+languageCode = "en-US"
+title = "Bowen Song"
+# Enable comments by entering your Disqus shortname
+disqusShortname = ""
+# Enable Google Analytics by entering your tracking code
+googleAnalytics = ""
+theme = "hugo-sustain"
+
+[permalinks]
+  post = "/post/:year/:month/:day/:slug"
+
+[params]
+  avatar = "Bowen Song Profile Picture.jpg"
+  author = "Bowen Song"
+  occupation = "incoming medical student at McGovern Medical School"
+  about = "Welcome to my website! Over the past several months, I've learned a lot about data science using R and python. This website showcases some of what I've learned, all in one place!"
+
+  # Custom assets can be linked with their paths relative to static/
+  custom_css = []
+  custom_js  = []
+
+[params.social]
+  Github        = "https://github.com/bowen-song"
+  Email         = "bowencsong@gmail.com"
+#  Twitter       = "username"
+#  LinkedIn      = "username"
+#  Instagram     = "username"
+#  Stackoverflow = "username"
+#  Medium        = "username"
+#  Telegram      = "username"
+
+## Main Menu
+[[menu.main]]
+  name = "blog"
+  weight = 100
+  identifier = "blog"
+  url = "/post/"
+[[menu.main]]
+  name = "projects"
+  identifier = "projects"
+  weight = 200
+  url = "/projects/"
+[[menu.main]]
+  name = "resume"
+  identifier = "resume"
+  weight = 300
+  url = "/resume.pdf"

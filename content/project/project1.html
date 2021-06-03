@@ -1,0 +1,926 @@
+---
+title: 'Project 1: Exploratory Data Analysis'
+author: "Bowen Song (bs37486)"
+date: '2020-10-18'
+output:
+  html_document:
+    toc: yes
+    toc_depth: 3
+    toc_float:
+      collapsed: no
+      smooth_scroll: yes
+  pdf_document:
+    toc: no
+---
+
+<script src="/rmarkdown-libs/header-attrs/header-attrs.js"></script>
+<link href="/rmarkdown-libs/anchor-sections/anchor-sections.css" rel="stylesheet" />
+<script src="/rmarkdown-libs/anchor-sections/anchor-sections.js"></script>
+<script src="/rmarkdown-libs/kePrint/kePrint.js"></script>
+<link href="/rmarkdown-libs/lightable/lightable.css" rel="stylesheet" />
+
+
+<hr />
+<div id="setting-up" class="section level3">
+<h3>Setting Up</h3>
+<pre class="r"><code># all packages
+library(tidyverse)
+library(ggplot2)
+library(lubridate)
+library(stringr)
+library(knitr)
+library(kableExtra)
+library(scales)
+library(cluster)
+
+# all data sources linked at the end COVID-19 by county
+cvd_untidy &lt;- read_csv(&quot;us-counties.csv&quot;)
+# K-12 school district reopening plans
+kplan_untidy &lt;- read_csv(&quot;District_Reopening_Data.csv&quot;)
+# college reopening plans
+cplan_untidy &lt;- read_csv(&quot;us-college-plans.csv&quot;)
+# K-12 location by county
+kloc_untidy &lt;- read_csv(&quot;sdlist.csv&quot;)
+# college location by county
+cloc_untidy &lt;- read_csv(&quot;us-colleges-and-universities.csv&quot;)
+# mask use by county
+mask_untidy &lt;- read_csv(&quot;mask-use-by-county.csv&quot;)
+# US population by county
+countypop_untidy &lt;- read_csv(&quot;US_pop_by_county.csv&quot;)
+# US county FIPS codes
+countyfips_untidy &lt;- read_csv(&quot;co_fips.csv&quot;)</code></pre>
+<hr />
+</div>
+<div id="introduction" class="section level3">
+<h3>Introduction</h3>
+<p>A number of the datasets I have chosen for this project contain extraneous variables that will be removed while tidying the datasets as needed.</p>
+<ul>
+<li><p>The <code>cvd</code> dataset is US COVID-19 data organized by county collected by the NY Times. <code>cvd</code> contains 6 variables that will all be kept: <code>date</code> (dates from 01-21-20 to 10-04-20), <code>county</code>, <code>state</code>, <code>fips</code> (every county’s unique numerical identifier), <code>cases</code> (cases of COVID-19), and <code>deaths</code> (deaths to COVID-19).</p></li>
+<li><p>The <code>kplan</code> dataset contains information about the reopening plans of K-12 schools in the US and is provided by Education Week. Of the 8 original variables in <code>kplan</code>, only 4 are kept: <code>District</code> (district name), <code>State</code>, <code>StartDateK12</code> (official start day of school district), and <code>K12reopenplan</code> (remote, hybrid, or in-person).</p></li>
+<li><p>The <code>kloc</code> dataset contains information on each K-12 school district’s respective location and is provided by the US Census Bureau. From <code>kloc</code> only 3 of the original 7 variables are kept: <code>State</code>, <code>School District Name</code>, and <code>county</code>.</p></li>
+<li><p>The <code>cplan</code> dataset contains information about the reopening plans of colleges in the US and is currently being maintained by Sina Booeshaghi and Lior Pachter at Caltech University. From <code>cplan</code>, 4 of the original 16 variables are kept: <code>institution</code> (college/university name), <code>rtc_model</code> (“return to college” plan), <code>LastUpdatedCol</code> (date last updated), and <code>State</code>.</p></li>
+<li><p>The <code>cloc</code> dataset contains information on each institution’s respective location and is provided by Homeland Infrastructure Foundation-Level Data (HIFLD), a subcommittee of the Department of Homeland Security. From <code>cloc</code>, only 4 of the original 45 variables are kept: <code>Name</code> (college/university name), <code>City</code>, <code>State</code>, and <code>County</code>.</p></li>
+<li><p>To reduce possible errors while joining, <code>countyfips</code> contains the fips number for all counties and states in the US, and was compiled by Aaron King of the University of Michigan. Of the original 4 variables in <code>countyfips</code>, 3 are kept: <code>fips</code> (county unique numerical identifier), <code>state</code>, <code>county</code>.</p></li>
+<li><p>The <code>countypop</code> dataset contains information on the population of each county from 2010-2019, and is provided by the US Census Bureau. Of the 13 original variables, only 3 are kept: <code>county</code>, <code>state</code> and <code>pop2019</code> (population).</p></li>
+<li><p>The <code>mask</code> dataset contains the proportion of people by <code>COUNTYFP</code> (county fips) who <code>always_mask</code>, <code>freq_mask</code>, <code>sometimes_mask</code>, <code>rarely_mask</code>, and <code>never_mask</code> when they could encounter people, and is provided by a survey conducted by Dynata for the NY Times.</p></li>
+</ul>
+<p>Although it is undoubtedly difficult to confidently find associations or determine causality for complex issues such as the COVID-19 pandemic, from the above data I am primarily interested in determining whether there is any relationship between return to school strategies or the prevalence of mask wearing and COVID-19 cases and deaths. Based on existing public health guidelines, I am expecting to see that return to school strategies that involve in-person/hybrid plans be associated with greater counts of both cases and deaths. With regard to mask wearing, I am expecting to see that counties with higher proportions of their population saying they always mask be associated with lower counts of cases and deaths. As touched upon above, however, I am not confident in either of these predictions as this investigation does not consider the effects of many potential confounding variables. All that said, I am looking forward to seeing what the data shows!</p>
+<hr />
+</div>
+<div id="tidying-datasets" class="section level3">
+<h3>Tidying Datasets</h3>
+<p><code>cvd</code> needs no cleaning up:</p>
+<pre class="r"><code>cvd &lt;- cvd_untidy
+
+glimpse(cvd)</code></pre>
+<pre><code>## Rows: 748,502
+## Columns: 6
+## $ date   &lt;date&gt; 2020-01-21, 2020-01-22, 2020-01-23, 2020-01-24, 2020-01-24, 2…
+## $ county &lt;chr&gt; &quot;Snohomish&quot;, &quot;Snohomish&quot;, &quot;Snohomish&quot;, &quot;Cook&quot;, &quot;Snohomish&quot;, &quot;O…
+## $ state  &lt;chr&gt; &quot;Washington&quot;, &quot;Washington&quot;, &quot;Washington&quot;, &quot;Illinois&quot;, &quot;Washing…
+## $ fips   &lt;chr&gt; &quot;53061&quot;, &quot;53061&quot;, &quot;53061&quot;, &quot;17031&quot;, &quot;53061&quot;, &quot;06059&quot;, &quot;17031&quot;,…
+## $ cases  &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,…
+## $ deaths &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,…</code></pre>
+<p>Cleaning <code>kplan</code>:</p>
+<pre class="r"><code>kplan &lt;- kplan_untidy %&gt;% 
+  mutate(State = state.name[match(State, state.abb)], #changes state abbreviations to state name
+         StartDateK12 = as.Date(parse_date_time(`Start date`, &quot;mdy&quot;)), #changes formatting of the date from &quot;m/dd/yy&quot; to &quot;yyyy-mm-dd&quot;
+         K12reopenplan = `District reopening plan`) %&gt;% #rename column to remove spaces
+  select(-NCES, -Link, -`Start date`, -`Last verified`, -`District reopening plan`, -`Public School Enrollment`) #selecting columns wanted
+
+glimpse(kplan)</code></pre>
+<pre><code>## Rows: 907
+## Columns: 4
+## $ District      &lt;chr&gt; &quot;New York City&quot;, &quot;Los Angeles Unified&quot;, &quot;City of Chicag…
+## $ State         &lt;chr&gt; &quot;New York&quot;, &quot;California&quot;, &quot;Illinois&quot;, &quot;Florida&quot;, &quot;Nevad…
+## $ StartDateK12  &lt;date&gt; 2020-09-21, 2020-08-18, 2020-09-08, 2020-08-31, 2020-0…
+## $ K12reopenplan &lt;chr&gt; &quot;Remote learning only&quot;, &quot;Remote learning only&quot;, &quot;Remote…</code></pre>
+<p>Cleaning <code>cplan</code>:</p>
+<pre class="r"><code>cplan &lt;- cplan_untidy %&gt;% 
+  mutate(State = state.name[match(state, state.abb)], #changes state abbreviations to state name
+         LastUpdatedCol = as.Date(parse_date_time(last_updated, &quot;mdy&quot;))) %&gt;% #date formatting from &quot;m/dd/yyyy&quot; to &quot;yyyy-mm-dd&quot;
+  select(institution, rtc_model, LastUpdatedCol, State) #selecting columns wanted
+
+glimpse(cplan)</code></pre>
+<pre><code>## Rows: 1,227
+## Columns: 4
+## $ institution    &lt;chr&gt; &quot;Abilene Christian University&quot;, &quot;Academy of Art Univer…
+## $ rtc_model      &lt;chr&gt; &quot;Planning for in-person&quot;, &quot;Proposing a hybrid model&quot;, …
+## $ LastUpdatedCol &lt;date&gt; 2020-08-18, 2020-08-18, 2020-07-27, 2020-07-27, 2020-…
+## $ State          &lt;chr&gt; &quot;Texas&quot;, &quot;California&quot;, &quot;New York&quot;, &quot;Michigan&quot;, &quot;Georgi…</code></pre>
+<p>Cleaning <code>kloc</code>:</p>
+<pre class="r"><code>kloc &lt;- kloc_untidy %&gt;% 
+  mutate(State = state.name[match(`State Postal Code`, state.abb)]) %&gt;% #changes state abbreviations to state name
+  select(State, `School District Name`, `County Names`) %&gt;% #selecting columns wanted
+  separate(`County Names`, into = c(&quot;county&quot;, NA)) #drops the &quot;County&quot; in &quot;_________ County&quot;
+
+glimpse(kloc)</code></pre>
+<pre><code>## Rows: 19,032
+## Columns: 3
+## $ State                  &lt;chr&gt; &quot;Alabama&quot;, &quot;Alabama&quot;, &quot;Alabama&quot;, &quot;Alabama&quot;, &quot;A…
+## $ `School District Name` &lt;chr&gt; &quot;Alabaster City School District&quot;, &quot;Albertville…
+## $ county                 &lt;chr&gt; &quot;Shelby&quot;, &quot;Marshall&quot;, &quot;Tallapoosa&quot;, &quot;Covington…</code></pre>
+<p>Cleaning <code>cloc</code>:</p>
+<pre class="r"><code>cloc &lt;- cloc_untidy %&gt;% 
+  mutate(State = state.name[match(STATE, state.abb)], #changes state abbreviations to state name
+         #changes case to only first letter capitalized
+         County = str_to_title(COUNTY),
+         Name = str_to_title(NAME),
+         City = str_to_title(CITY)) %&gt;% 
+  select(Name, City, State, County) #selecting columns wanted
+
+glimpse(cloc)</code></pre>
+<pre><code>## Rows: 7,686
+## Columns: 4
+## $ Name   &lt;chr&gt; &quot;Fortis Institute-Port Saint Lucie&quot;, &quot;Columbia Basin College&quot;,…
+## $ City   &lt;chr&gt; &quot;Port Saint Lucie&quot;, &quot;Pasco&quot;, &quot;Charleston&quot;, &quot;Torrington&quot;, &quot;Baya…
+## $ State  &lt;chr&gt; &quot;Florida&quot;, &quot;Washington&quot;, &quot;West Virginia&quot;, &quot;Wyoming&quot;, NA, NA, N…
+## $ County &lt;chr&gt; &quot;St. Lucie&quot;, &quot;Franklin&quot;, &quot;Kanawha&quot;, &quot;Goshen&quot;, &quot;Bayam&quot;, &quot;San Ge…</code></pre>
+<p>Cleaning <code>mask</code>:</p>
+<pre class="r"><code>mask &lt;- mask_untidy %&gt;% # renaming variables for clarity
+rename(never_mask = NEVER, rarely_mask = RARELY, sometimes_mask = SOMETIMES, 
+    freq_mask = FREQUENTLY, always_mask = ALWAYS)
+
+glimpse(mask)</code></pre>
+<pre><code>## Rows: 3,142
+## Columns: 6
+## $ COUNTYFP       &lt;chr&gt; &quot;01001&quot;, &quot;01003&quot;, &quot;01005&quot;, &quot;01007&quot;, &quot;01009&quot;, &quot;01011&quot;, …
+## $ never_mask     &lt;dbl&gt; 0.053, 0.083, 0.067, 0.020, 0.053, 0.031, 0.102, 0.152…
+## $ rarely_mask    &lt;dbl&gt; 0.074, 0.059, 0.121, 0.034, 0.114, 0.040, 0.053, 0.108…
+## $ sometimes_mask &lt;dbl&gt; 0.134, 0.098, 0.120, 0.096, 0.180, 0.144, 0.257, 0.130…
+## $ freq_mask      &lt;dbl&gt; 0.295, 0.323, 0.201, 0.278, 0.194, 0.286, 0.137, 0.167…
+## $ always_mask    &lt;dbl&gt; 0.444, 0.436, 0.491, 0.572, 0.459, 0.500, 0.451, 0.442…</code></pre>
+<p>Cleaning <code>countypop</code>:</p>
+<pre class="r"><code>countypop &lt;- countypop_untidy %&gt;% 
+  slice(-1) %&gt;% #removes the &quot;US&quot; row
+  select(&quot;Geographic Area&quot;, &quot;2019&quot;) %&gt;% #selects location + 2019 population data
+  separate(&quot;Geographic Area&quot;, into = c(&quot;county&quot;, &quot;state&quot;), sep = &quot;,&quot;) %&gt;% #separates location into county/state
+  separate(county, into = c(&quot;county&quot;, NA), sep = &quot; &quot;) %&gt;% #drops the &quot;County&quot; in &quot;_________ County&quot;
+  mutate(county = str_replace(county, &quot;.&quot;, &quot;&quot;), #drops the &quot;.&quot; in front of county names
+         pop2019 = as.numeric(`2019`), #renames population
+         state = trimws(state)) %&gt;%  #removes spaces in front of state
+  select(-`2019`)
+
+glimpse(countypop)</code></pre>
+<pre><code>## Rows: 3,148
+## Columns: 3
+## $ county  &lt;chr&gt; &quot;Autauga&quot;, &quot;Baldwin&quot;, &quot;Barbour&quot;, &quot;Bibb&quot;, &quot;Blount&quot;, &quot;Bullock&quot;,…
+## $ state   &lt;chr&gt; &quot;Alabama&quot;, &quot;Alabama&quot;, &quot;Alabama&quot;, &quot;Alabama&quot;, &quot;Alabama&quot;, &quot;Alaba…
+## $ pop2019 &lt;dbl&gt; 55869, 223234, 24686, 22394, 57826, 10101, 19448, 113605, 332…</code></pre>
+<p>Cleaning <code>countyfips</code>:</p>
+<pre class="r"><code>countyfips &lt;- countyfips_untidy %&gt;% 
+  select(-stateiso) %&gt;%  #removes state code
+  separate(county, into = c(&quot;county&quot;, NA), sep = &quot; &quot;) #drops the &quot;County&quot; in &quot;_________ County&quot;
+
+glimpse(countyfips)</code></pre>
+<pre><code>## Rows: 3,140
+## Columns: 3
+## $ fips   &lt;chr&gt; &quot;01001&quot;, &quot;01003&quot;, &quot;01005&quot;, &quot;01007&quot;, &quot;01009&quot;, &quot;01011&quot;, &quot;01013&quot;,…
+## $ state  &lt;chr&gt; &quot;Alabama&quot;, &quot;Alabama&quot;, &quot;Alabama&quot;, &quot;Alabama&quot;, &quot;Alabama&quot;, &quot;Alabam…
+## $ county &lt;chr&gt; &quot;Autauga&quot;, &quot;Baldwin&quot;, &quot;Barbour&quot;, &quot;Bibb&quot;, &quot;Blount&quot;, &quot;Bullock&quot;, …</code></pre>
+<hr />
+</div>
+<div id="joining-data" class="section level3">
+<h3>Joining Data</h3>
+<pre class="r"><code># join countypop to countyfips by county
+countyfipspop &lt;- countyfips %&gt;% # left join because we only want population data on counties
+# for which we have the fips identifier
+left_join(countypop, by = c(&quot;county&quot;, &quot;state&quot;))
+
+# join K-12 plans to K-12 locations by name of district
+kplanloc &lt;- kplan %&gt;% # inner join because we only want rows in which we have data
+# on both K-12 location and reopening plan we shouldn&#39;t lose
+# any data from kplan as kloc should contain information on
+# every US school district
+inner_join(kloc, by = c(District = &quot;School District Name&quot;, &quot;State&quot;))
+
+# join countyfips to kplanloc
+kplanloc &lt;- countyfipspop %&gt;% # inner join because because we only want rows in which we
+# have data on both county and K-12 plans/locations we
+# shouldn&#39;t lose any data from kplanloc as countyfipspop
+# should contain the fips codes for every US county
+inner_join(kplanloc, by = c(&quot;county&quot;, state = &quot;State&quot;))
+
+# join college plans to college locations by name of college
+cplanloc &lt;- cplan %&gt;% # inner join because we only want rows in which we have data
+# on both college location and reopening plan we shouldn&#39;t
+# lose any data from cplan as cloc should contain information
+# on every US college
+inner_join(cloc, by = c(institution = &quot;Name&quot;, &quot;State&quot;))
+
+# join countyfips to cplanloc
+cplanloc &lt;- countyfipspop %&gt;% # inner join because because we only want rows in which we
+# have data on both county and college plans/locations we
+# shouldn&#39;t lose any data from cplanloc as countyfipspop
+# should contain the fips codes for every US county
+inner_join(cplanloc, by = c(county = &quot;County&quot;, state = &quot;State&quot;))
+
+# join mask to covid cases by FIPS
+maskcvd &lt;- cvd %&gt;% # left join here because we don&#39;t want to lose any rows from
+# `cvd` even if `mask` is missing points
+left_join(mask, by = c(fips = &quot;COUNTYFP&quot;))
+
+# join all to `maskcvd` by county
+fulldata &lt;- maskcvd %&gt;% # full join because we want to keep as many data points as
+# possible at this point sort out and deal with NAs in later
+# steps depending on investigation of interest
+full_join(kplanloc, by = c(&quot;fips&quot;, &quot;county&quot;, &quot;state&quot;)) %&gt;% full_join(cplanloc, 
+    by = c(&quot;fips&quot;, &quot;county&quot;, &quot;state&quot;)) %&gt;% # creates a new column that condenses duplicate columns from
+# joins
+mutate(pop2019 = coalesce(pop2019.x, pop2019.y)) %&gt;% select(-pop2019.x, 
+    -pop2019.y)  #removes the duplicate columns
+
+glimpse(fulldata)</code></pre>
+<pre><code>## Rows: 824,540
+## Columns: 19
+## $ date           &lt;date&gt; 2020-01-21, 2020-01-21, 2020-01-22, 2020-01-22, 2020-…
+## $ county         &lt;chr&gt; &quot;Snohomish&quot;, &quot;Snohomish&quot;, &quot;Snohomish&quot;, &quot;Snohomish&quot;, &quot;S…
+## $ state          &lt;chr&gt; &quot;Washington&quot;, &quot;Washington&quot;, &quot;Washington&quot;, &quot;Washington&quot;…
+## $ fips           &lt;chr&gt; &quot;53061&quot;, &quot;53061&quot;, &quot;53061&quot;, &quot;53061&quot;, &quot;53061&quot;, &quot;53061&quot;, …
+## $ cases          &lt;dbl&gt; 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, …
+## $ deaths         &lt;dbl&gt; 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, …
+## $ never_mask     &lt;dbl&gt; 0.017, 0.017, 0.017, 0.017, 0.017, 0.017, 0.023, 0.023…
+## $ rarely_mask    &lt;dbl&gt; 0.014, 0.014, 0.014, 0.014, 0.014, 0.014, 0.021, 0.021…
+## $ sometimes_mask &lt;dbl&gt; 0.056, 0.056, 0.056, 0.056, 0.056, 0.056, 0.072, 0.072…
+## $ freq_mask      &lt;dbl&gt; 0.191, 0.191, 0.191, 0.191, 0.191, 0.191, 0.162, 0.162…
+## $ always_mask    &lt;dbl&gt; 0.721, 0.721, 0.721, 0.721, 0.721, 0.721, 0.722, 0.722…
+## $ District       &lt;chr&gt; &quot;Northshore School District&quot;, &quot;Edmonds School District…
+## $ StartDateK12   &lt;date&gt; 2020-09-02, 2020-09-09, 2020-09-02, 2020-09-09, 2020-…
+## $ K12reopenplan  &lt;chr&gt; &quot;Remote learning only&quot;, &quot;Remote learning only&quot;, &quot;Remot…
+## $ institution    &lt;chr&gt; NA, NA, NA, NA, NA, NA, &quot;Dominican University&quot;, &quot;Loyol…
+## $ rtc_model      &lt;chr&gt; NA, NA, NA, NA, NA, NA, &quot;Planning for in-person&quot;, &quot;Pla…
+## $ LastUpdatedCol &lt;date&gt; NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, 2020-07-26, N…
+## $ City           &lt;chr&gt; NA, NA, NA, NA, NA, NA, &quot;River Forest&quot;, &quot;Chicago&quot;, &quot;Ch…
+## $ pop2019        &lt;dbl&gt; 822083, 822083, 822083, 822083, 822083, 822083, 515023…</code></pre>
+<p>Cleaning fulldata and creating fulldataprior:</p>
+<pre class="r"><code>fulldata &lt;- fulldata %&gt;% 
+  #renaming return to school models to equate K-12 plans with college plans
+  mutate(K12reopenplan = str_replace(K12reopenplan, &quot;.*Hybrid.*&quot;, &quot;hybrid&quot;),
+         K12reopenplan = str_replace(K12reopenplan, &quot;.*Remote.*&quot;, &quot;remote&quot;),
+         K12reopenplan = str_replace(K12reopenplan, &quot;.*in-person.*&quot;, &quot;in person&quot;),
+         rtc_model = str_replace(rtc_model, &quot;.*in-person.*&quot;, &quot;in person&quot;),
+         rtc_model = str_replace(rtc_model, &quot;.*hybrid.*&quot;, &quot;hybrid&quot;),
+         rtc_model = str_replace(rtc_model, &quot;.*online.*&quot;, &quot;remote&quot;),
+         #as the following are undefined, &quot;Considering a range of scenarios&quot; and &quot;Waiting to decide&quot; are omitted
+         rtc_model = na_if(rtc_model, &quot;Considering a range of scenarios&quot;),
+         rtc_model = na_if(rtc_model, &quot;Waiting to decide&quot;)) %&gt;% 
+  select(county, state, cases, deaths, District, K12reopenplan, institution, rtc_model, pop2019, everything()) #selecting columns wanted
+
+fulldataprior &lt;- fulldata #creates a dataset that will be later modified to consist of dates prior to school start</code></pre>
+<p>Now that the data is finally all combined, the next step is to determine which <code>date</code>s to focus on for this investigation:</p>
+<pre class="r"><code># on average, schools start on this date
+fulldata %&gt;% summarize(MeanDate = mean.Date(c(StartDateK12, LastUpdatedCol), 
+    na.rm = T))  #finds &#39;average&#39; start date</code></pre>
+<pre><code>## # A tibble: 1 x 1
+##   MeanDate  
+##   &lt;date&gt;    
+## 1 2020-08-18</code></pre>
+<pre class="r"><code># filtering all dates between 8-18 and 10-04 8-18 is mean
+# start date, and 10-04 was the most recent date available at
+# the time of this investigation total of 48 days
+fulldata &lt;- fulldata %&gt;% filter(date &gt;= as.Date(&quot;2020-08-18&quot;) &amp; 
+    date &lt;= as.Date(&quot;2020-10-04&quot;))
+
+# filtering all dates between 6-30 and 8-17 filter dates 48
+# days prior to start of school for comparison
+fulldataprior &lt;- fulldataprior %&gt;% filter(date &lt; as.Date(&quot;2020-08-17&quot;) &amp; 
+    date &gt;= as.Date(&quot;2020-06-30&quot;))
+
+# removes NAs where there is no district or institution data
+# aka, extra mask data
+fulldata &lt;- fulldata[!(is.na(fulldata$District)) | !(is.na(fulldata$institution)), 
+    ]
+fulldataprior &lt;- fulldataprior[!(is.na(fulldataprior$District)) | 
+    !(is.na(fulldataprior$institution)), ]</code></pre>
+<p>Creates a new column that combines overall reopening plans. Format of observations after unite: <strong>“collegeplan_K12plan”</strong></p>
+<pre class="r"><code># creates new column for fulldata
+fulldata &lt;- fulldata %&gt;% unite(rtc_model, K12reopenplan, col = &quot;cK12plans&quot;, 
+    sep = &quot;_&quot;, remove = F)
+# creates new column for fulldataprior
+fulldataprior &lt;- fulldataprior %&gt;% unite(rtc_model, K12reopenplan, 
+    col = &quot;cK12plans&quot;, sep = &quot;_&quot;, remove = F)</code></pre>
+<p>Creates new columns for cases and deaths per 1,000 people. Scaling the cases and deaths by population should lead to a better representation of the effect of reopening plans on case/death count than doing a direct comparison.</p>
+<pre class="r"><code># cases and deaths/1,000 after school start
+fulldata &lt;- fulldata %&gt;% mutate(casespercap = (cases/pop2019) * 
+    1000, deathspercap = (deaths/pop2019) * 1000)
+# cases and deaths/1,000 before school start
+fulldataprior &lt;- fulldataprior %&gt;% mutate(casespercap = (cases/pop2019) * 
+    1000, deathspercap = (deaths/pop2019) * 1000)
+
+# final data
+glimpse(fulldata)</code></pre>
+<pre><code>## Rows: 37,632
+## Columns: 22
+## $ county         &lt;chr&gt; &quot;Calhoun&quot;, &quot;Jefferson&quot;, &quot;Lee&quot;, &quot;Montgomery&quot;, &quot;Montgome…
+## $ state          &lt;chr&gt; &quot;Alabama&quot;, &quot;Alabama&quot;, &quot;Alabama&quot;, &quot;Alabama&quot;, &quot;Alabama&quot;,…
+## $ cases          &lt;dbl&gt; 2107, 14525, 3128, 7382, 7382, 809, 2655, 3196, 129958…
+## $ deaths         &lt;dbl&gt; 25, 266, 51, 156, 156, 8, 16, 121, 2612, 73, 43, 2, 2,…
+## $ District       &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, &quot;Paradise Valley Unifi…
+## $ cK12plans      &lt;chr&gt; &quot;in person_NA&quot;, &quot;in person_NA&quot;, &quot;in person_NA&quot;, &quot;in pe…
+## $ K12reopenplan  &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, &quot;remote&quot;, NA, &quot;in pers…
+## $ institution    &lt;chr&gt; &quot;Jacksonville State University&quot;, &quot;Samford University&quot;,…
+## $ rtc_model      &lt;chr&gt; &quot;in person&quot;, &quot;in person&quot;, &quot;in person&quot;, &quot;in person&quot;, &quot;i…
+## $ pop2019        &lt;dbl&gt; 113605, 658573, 164542, 226486, 226486, 33114, 288000,…
+## $ date           &lt;date&gt; 2020-08-18, 2020-08-18, 2020-08-18, 2020-08-18, 2020-…
+## $ fips           &lt;chr&gt; &quot;01015&quot;, &quot;01073&quot;, &quot;01081&quot;, &quot;01101&quot;, &quot;01101&quot;, &quot;01109&quot;, …
+## $ never_mask     &lt;dbl&gt; 0.152, 0.049, 0.053, 0.056, 0.056, 0.060, 0.042, 0.039…
+## $ rarely_mask    &lt;dbl&gt; 0.108, 0.037, 0.064, 0.095, 0.095, 0.131, 0.050, 0.080…
+## $ sometimes_mask &lt;dbl&gt; 0.130, 0.107, 0.138, 0.123, 0.123, 0.145, 0.049, 0.070…
+## $ freq_mask      &lt;dbl&gt; 0.167, 0.179, 0.183, 0.212, 0.212, 0.333, 0.196, 0.110…
+## $ always_mask    &lt;dbl&gt; 0.442, 0.628, 0.562, 0.513, 0.513, 0.330, 0.663, 0.702…
+## $ StartDateK12   &lt;date&gt; NA, NA, NA, NA, NA, NA, NA, NA, 2020-08-05, NA, 2020-…
+## $ LastUpdatedCol &lt;date&gt; 2020-07-29, NA, NA, 2020-07-27, 2020-07-28, NA, 2020-…
+## $ City           &lt;chr&gt; &quot;Jacksonville&quot;, &quot;Birmingham&quot;, &quot;Auburn University&quot;, &quot;Mo…
+## $ casespercap    &lt;dbl&gt; 18.546719, 22.055262, 19.010344, 32.593626, 32.593626,…
+## $ deathspercap   &lt;dbl&gt; 0.22006074, 0.40390359, 0.30995126, 0.68878430, 0.6887…</code></pre>
+<pre class="r"><code>glimpse(fulldataprior)</code></pre>
+<pre><code>## Rows: 37,612
+## Columns: 22
+## $ county         &lt;chr&gt; &quot;Calhoun&quot;, &quot;Jefferson&quot;, &quot;Lee&quot;, &quot;Montgomery&quot;, &quot;Montgome…
+## $ state          &lt;chr&gt; &quot;Alabama&quot;, &quot;Alabama&quot;, &quot;Alabama&quot;, &quot;Alabama&quot;, &quot;Alabama&quot;,…
+## $ cases          &lt;dbl&gt; 276, 4258, 1188, 3839, 3839, 404, 485, 1885, 48710, 79…
+## $ deaths         &lt;dbl&gt; 5, 142, 37, 97, 97, 5, 6, 92, 771, 9, 18, 0, 0, 1, 3, …
+## $ District       &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, &quot;Paradise Valley Unifi…
+## $ cK12plans      &lt;chr&gt; &quot;in person_NA&quot;, &quot;in person_NA&quot;, &quot;in person_NA&quot;, &quot;in pe…
+## $ K12reopenplan  &lt;chr&gt; NA, NA, NA, NA, NA, NA, NA, NA, &quot;remote&quot;, NA, &quot;in pers…
+## $ institution    &lt;chr&gt; &quot;Jacksonville State University&quot;, &quot;Samford University&quot;,…
+## $ rtc_model      &lt;chr&gt; &quot;in person&quot;, &quot;in person&quot;, &quot;in person&quot;, &quot;in person&quot;, &quot;i…
+## $ pop2019        &lt;dbl&gt; 113605, 658573, 164542, 226486, 226486, 33114, 288000,…
+## $ date           &lt;date&gt; 2020-06-30, 2020-06-30, 2020-06-30, 2020-06-30, 2020-…
+## $ fips           &lt;chr&gt; &quot;01015&quot;, &quot;01073&quot;, &quot;01081&quot;, &quot;01101&quot;, &quot;01101&quot;, &quot;01109&quot;, …
+## $ never_mask     &lt;dbl&gt; 0.152, 0.049, 0.053, 0.056, 0.056, 0.060, 0.042, 0.039…
+## $ rarely_mask    &lt;dbl&gt; 0.108, 0.037, 0.064, 0.095, 0.095, 0.131, 0.050, 0.080…
+## $ sometimes_mask &lt;dbl&gt; 0.130, 0.107, 0.138, 0.123, 0.123, 0.145, 0.049, 0.070…
+## $ freq_mask      &lt;dbl&gt; 0.167, 0.179, 0.183, 0.212, 0.212, 0.333, 0.196, 0.110…
+## $ always_mask    &lt;dbl&gt; 0.442, 0.628, 0.562, 0.513, 0.513, 0.330, 0.663, 0.702…
+## $ StartDateK12   &lt;date&gt; NA, NA, NA, NA, NA, NA, NA, NA, 2020-08-05, NA, 2020-…
+## $ LastUpdatedCol &lt;date&gt; 2020-07-29, NA, NA, 2020-07-27, 2020-07-28, NA, 2020-…
+## $ City           &lt;chr&gt; &quot;Jacksonville&quot;, &quot;Birmingham&quot;, &quot;Auburn University&quot;, &quot;Mo…
+## $ casespercap    &lt;dbl&gt; 2.429471, 6.465494, 7.220041, 16.950275, 16.950275, 12…
+## $ deathspercap   &lt;dbl&gt; 0.04401215, 0.21561771, 0.22486660, 0.42828254, 0.4282…</code></pre>
+<hr />
+</div>
+<div id="visualizing-by-ck12plan" class="section level3">
+<h3>Visualizing by <code>cK12plan</code></h3>
+<div id="barplot-of-average-casesdeaths" class="section level4">
+<h4>barplot of average cases/deaths</h4>
+<pre class="r"><code># mean cases and deaths per capita by plan visualized in
+# faceted bar plot
+fulldata %&gt;% group_by(cK12plans) %&gt;% # removing rows in which data is missing for either college
+# plan or K-12 plan might result in a less representative
+# sample, but is the only way to make sure data is complete
+filter(!str_detect(cK12plans, &quot;.*NA.*&quot;)) %&gt;% summarize_at(vars(deathspercap, 
+    casespercap), list(mean = mean, med = median, sd = sd, count = length)) %&gt;% 
+    # creating column for standard errors
+mutate(deathspercap_se = deathspercap_sd/sqrt(deathspercap_count), 
+    casespercap_se = casespercap_sd/sqrt(casespercap_count)) %&gt;% 
+    # rearranging data
+pivot_longer(-1) %&gt;% separate(name, into = c(&quot;variable&quot;, &quot;stat&quot;)) %&gt;% 
+    pivot_wider(names_from = &quot;stat&quot;, values_from = &quot;value&quot;) %&gt;% 
+    # creating faceted barplot by plan
+ggplot(aes(variable, mean, fill = variable)) + geom_bar(stat = &quot;summary&quot;, 
+    position = &quot;dodge&quot;) + facet_wrap(~cK12plans) + geom_errorbar(aes(y = mean, 
+    ymin = mean - se, ymax = mean + se), width = 0.5) + labs(x = &quot;&quot;, 
+    title = &quot;Mean Cases/Deaths by Return to School Plan&quot;, subtitle = &quot;Represented by average cases/deaths per 1,000 people&quot;) + 
+    scale_fill_brewer(palette = &quot;Dark2&quot;) + theme(plot.title = element_text(face = &quot;bold&quot;))</code></pre>
+<p><img src="/project/project1_files/figure-html/unnamed-chunk-15-1.png" width="672" style="display: block; margin: auto;" />
+From this plot, it appears that my initial assumptions about reopening plans were only partially true. Looking first at the <code>casespercap</code> variable, it seems that plans which involve returning to school in-person (either fully, or partially) result in a greater number of cases of COVID-19. Sticking out like a sore thumb, it is apparent that locations in which both colleges and K-12 schools conducting in-person education have the greatest count of cases of COVID-19 (represented by <code>in person_in person</code>). This result makes sense; increasing the amount of person to person contact during a pandemic is sure to result in greater spread.</p>
+<p>What’s interesting, however, is that though the case counts are pretty clearly differently by reopening plan, the same cannot be said for death counts, which seem to be very similar regardless of reopening plan. This result doesn’t make sense; the logical assumption would be that case counts and death counts be proportional to one another (as case counts go up, so too do death counts), but this is simply not the case here. These unexpected results could be due to a wide variety of extraneous variables not considered here. For example, maybe there are disparities in healthcare that result in differing mortality rates by location. Or maybe most of the people getting sick are young and healthy, and as such are at lower risk of dying. Whatever the case may be, it’s great to see that even though cases may be greater for schools reopening in-person, the deaths are not also greater.</p>
+<hr />
+</div>
+</div>
+<div id="summary-stats-by-ck12plan" class="section level3">
+<h3>Summary Stats by <code>cK12plan</code></h3>
+<pre class="r"><code>#cases and deaths per capita by plan visualized in a table
+fulldata %&gt;% 
+  group_by(cK12plans) %&gt;%
+  filter(!str_detect(cK12plans, &quot;.*NA.*&quot;)) %&gt;% 
+  summarize_at(vars(deathspercap, casespercap),
+               list(mean = mean,
+                    med = median,
+                    sd = sd)) %&gt;% 
+  pivot_longer(-1) %&gt;% 
+  separate(name, into = c(&quot;variable&quot;, &quot;stat&quot;)) %&gt;% 
+  pivot_wider(names_from = &quot;stat&quot;, values_from = &quot;value&quot;) %&gt;% 
+  arrange(-mean) %&gt;% #arrange by mean in descending order
+  select(variable, cK12plans, everything()) %&gt;% #rearranging columns
+  kbl(caption = &quot;Summary Statistics by Reopening Plan&quot;) %&gt;% 
+  kable_classic_2(&quot;striped&quot;, html_font = &quot;Cambria&quot;) %&gt;% 
+  footnote(general = &quot;Represented by stats of cases/deaths per 1,000 people&quot;)</code></pre>
+<table class=" lightable-classic-2 lightable-striped" style="font-family: Cambria; margin-left: auto; margin-right: auto;border-bottom: 0;">
+<caption>
+<span id="tab:unnamed-chunk-16">Table 1: </span>Summary Statistics by Reopening Plan
+</caption>
+<thead>
+<tr>
+<th style="text-align:left;">
+variable
+</th>
+<th style="text-align:left;">
+cK12plans
+</th>
+<th style="text-align:right;">
+mean
+</th>
+<th style="text-align:right;">
+med
+</th>
+<th style="text-align:right;">
+sd
+</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left;">
+casespercap
+</td>
+<td style="text-align:left;">
+in person_in person
+</td>
+<td style="text-align:right;">
+25.2549474
+</td>
+<td style="text-align:right;">
+25.0627049
+</td>
+<td style="text-align:right;">
+2.3580886
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+casespercap
+</td>
+<td style="text-align:left;">
+hybrid_in person
+</td>
+<td style="text-align:right;">
+20.8834126
+</td>
+<td style="text-align:right;">
+20.5111395
+</td>
+<td style="text-align:right;">
+2.1378698
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+casespercap
+</td>
+<td style="text-align:left;">
+in person_remote
+</td>
+<td style="text-align:right;">
+18.2691239
+</td>
+<td style="text-align:right;">
+18.4346954
+</td>
+<td style="text-align:right;">
+8.5315257
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+casespercap
+</td>
+<td style="text-align:left;">
+hybrid_remote
+</td>
+<td style="text-align:right;">
+17.6159165
+</td>
+<td style="text-align:right;">
+15.8452976
+</td>
+<td style="text-align:right;">
+9.0980357
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+casespercap
+</td>
+<td style="text-align:left;">
+hybrid_hybrid
+</td>
+<td style="text-align:right;">
+16.9933396
+</td>
+<td style="text-align:right;">
+17.0482701
+</td>
+<td style="text-align:right;">
+10.3293211
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+casespercap
+</td>
+<td style="text-align:left;">
+in person_hybrid
+</td>
+<td style="text-align:right;">
+16.2291683
+</td>
+<td style="text-align:right;">
+14.7712403
+</td>
+<td style="text-align:right;">
+8.3078651
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+casespercap
+</td>
+<td style="text-align:left;">
+remote_hybrid
+</td>
+<td style="text-align:right;">
+10.6741412
+</td>
+<td style="text-align:right;">
+10.2991427
+</td>
+<td style="text-align:right;">
+1.2446810
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+casespercap
+</td>
+<td style="text-align:left;">
+remote_remote
+</td>
+<td style="text-align:right;">
+9.4042782
+</td>
+<td style="text-align:right;">
+9.3360121
+</td>
+<td style="text-align:right;">
+0.8703383
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+deathspercap
+</td>
+<td style="text-align:left;">
+hybrid_hybrid
+</td>
+<td style="text-align:right;">
+0.7591850
+</td>
+<td style="text-align:right;">
+0.6792192
+</td>
+<td style="text-align:right;">
+0.5862463
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+deathspercap
+</td>
+<td style="text-align:left;">
+in person_remote
+</td>
+<td style="text-align:right;">
+0.6967046
+</td>
+<td style="text-align:right;">
+0.6858178
+</td>
+<td style="text-align:right;">
+0.3602144
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+deathspercap
+</td>
+<td style="text-align:left;">
+hybrid_remote
+</td>
+<td style="text-align:right;">
+0.6932162
+</td>
+<td style="text-align:right;">
+0.5814788
+</td>
+<td style="text-align:right;">
+0.4545632
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+deathspercap
+</td>
+<td style="text-align:left;">
+in person_hybrid
+</td>
+<td style="text-align:right;">
+0.5907342
+</td>
+<td style="text-align:right;">
+0.2869177
+</td>
+<td style="text-align:right;">
+0.5704445
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+deathspercap
+</td>
+<td style="text-align:left;">
+remote_hybrid
+</td>
+<td style="text-align:right;">
+0.4849876
+</td>
+<td style="text-align:right;">
+0.5042789
+</td>
+<td style="text-align:right;">
+0.2055274
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+deathspercap
+</td>
+<td style="text-align:left;">
+remote_remote
+</td>
+<td style="text-align:right;">
+0.3623584
+</td>
+<td style="text-align:right;">
+0.3351412
+</td>
+<td style="text-align:right;">
+0.1280984
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+deathspercap
+</td>
+<td style="text-align:left;">
+in person_in person
+</td>
+<td style="text-align:right;">
+0.3032779
+</td>
+<td style="text-align:right;">
+0.3098051
+</td>
+<td style="text-align:right;">
+0.0280320
+</td>
+</tr>
+<tr>
+<td style="text-align:left;">
+deathspercap
+</td>
+<td style="text-align:left;">
+hybrid_in person
+</td>
+<td style="text-align:right;">
+0.2374845
+</td>
+<td style="text-align:right;">
+0.2167363
+</td>
+<td style="text-align:right;">
+0.0624614
+</td>
+</tr>
+</tbody>
+<tfoot>
+<tr>
+<td style="padding: 0; " colspan="100%">
+<span style="font-style: italic;">Note: </span>
+</td>
+</tr>
+<tr>
+<td style="padding: 0; " colspan="100%">
+<sup></sup> Represented by stats of cases/deaths per 1,000 people
+</td>
+</tr>
+</tfoot>
+</table>
+<p>This table takes the same numbers used in the faceted barplot and arranges them in descending order of mean <code>casespercap</code> and <code>deathspercap</code>. From here, we can confirm that in person returns to school do indeed result in greater numbers of cases, but not necessarily deaths. Importantly, this table also shows us that for a number of school reopening plans, the standard deviations are quite large, which, in this case, could be an indicator of large fluctuations in <code>casespercap</code> and <code>deathspercap</code> between counties.</p>
+<hr />
+</div>
+<div id="cumulative-casesdeaths" class="section level3">
+<h3>Cumulative <code>cases</code>/<code>deaths</code></h3>
+<div id="between-06302020-and-10042020" class="section level4">
+<h4>Between 06/30/2020 and 10/04/2020</h4>
+<pre class="r"><code>fulldata %&gt;% full_join(fulldataprior) %&gt;% group_by(date) %&gt;% 
+    # finding the sum of cases/deaths by date
+summarize_at(vars(casespercap, deathspercap), list(sum = sum)) %&gt;% 
+    # rearranging for ease of plotting
+pivot_longer(-1, names_to = &quot;variable&quot;, values_to = &quot;Total Affected&quot;) %&gt;% 
+    ggplot(aes(x = date)) + geom_area(aes(y = `Total Affected`, 
+    fill = factor(variable, labels = c(&quot;cases&quot;, &quot;deaths&quot;)))) + 
+    geom_vline(aes(xintercept = as.Date(&quot;2020-08-18&quot;)), color = &quot;red&quot;, 
+        linetype = &quot;dashed&quot;, size = 1) + geom_label(aes(x = as.Date(&quot;2020-08-07&quot;), 
+    label = &quot;School Start\n Aug-18&quot;, y = 15000), text = element_text(size = 11)) + 
+    # increasing number of breaks on x axis
+scale_x_date(date_breaks = &quot;2 weeks&quot;, labels = date_format(&quot;%b-%d&quot;)) + 
+    # increasing number of breaks on y axis
+scale_y_continuous(breaks = seq(0, 20000, by = 2500)) + # angle of x labels adjusted
+theme(axis.text.x = element_text(angle = 45, hjust = 1)) + # changing labels, adding titles
+labs(x = &quot;&quot;, y = &quot;Total Affected&quot;, title = &quot;Cases and Deaths Over Time&quot;, 
+    subtitle = &quot;Total Affected: represented by sum of cases/deaths per 1,000 people&quot;, 
+    fill = &quot;Legend&quot;) + theme(plot.title = element_text(face = &quot;bold&quot;)) + 
+    # changing colors of fill
+scale_fill_manual(values = c(&quot;cadetblue&quot;, &quot;black&quot;)) + # adding points for first, school start, and last days totals
+geom_point(x = as.Date(&quot;2020-08-18&quot;), y = 12080.2208, color = &quot;yellow&quot;) + 
+    geom_point(x = as.Date(&quot;2020-06-30&quot;), y = 7151.6144, color = &quot;yellow&quot;) + 
+    geom_point(x = as.Date(&quot;2020-10-04&quot;), y = 17111.8879, color = &quot;yellow&quot;) + 
+    annotate(&quot;text&quot;, x = as.Date(&quot;2020-07-04&quot;), y = 6900, label = &quot;7152&quot;, 
+        color = &quot;white&quot;, size = 3.5) + annotate(&quot;text&quot;, x = as.Date(&quot;2020-08-23&quot;), 
+    y = 11900, label = &quot;12080&quot;, color = &quot;white&quot;, size = 3.5) + 
+    annotate(&quot;text&quot;, x = as.Date(&quot;2020-09-29&quot;), y = 17400, label = &quot;17112&quot;, 
+        color = &quot;black&quot;, size = 3.5) + # adding points for first school start, and last days deaths
+geom_point(x = as.Date(&quot;2020-06-30&quot;), y = 322.2928, color = &quot;yellow&quot;) + 
+    geom_point(x = as.Date(&quot;2020-08-18&quot;), y = 387.9071, color = &quot;yellow&quot;) + 
+    geom_point(x = as.Date(&quot;2020-10-04&quot;), y = 461.4253, color = &quot;yellow&quot;) + 
+    annotate(&quot;text&quot;, x = as.Date(&quot;2020-07-03&quot;), y = 700, label = &quot;322&quot;, 
+        color = &quot;white&quot;, size = 3.5) + annotate(&quot;text&quot;, x = as.Date(&quot;2020-08-21&quot;), 
+    y = 750, label = &quot;389&quot;, color = &quot;white&quot;, size = 3.5) + annotate(&quot;text&quot;, 
+    x = as.Date(&quot;2020-10-01&quot;), y = 800, label = &quot;461&quot;, color = &quot;white&quot;, 
+    size = 3.5)</code></pre>
+<p><img src="/project/project1_files/figure-html/unnamed-chunk-17-1.png" width="672" style="display: block; margin: auto;" />
+This plot reinforces the conclusions drawn from the barplots faceted by school reopening plans; cases are on the rise, and thankfully, the deaths are not rising at a similar rate. It’s interesting, also, to see that the number of cases and deaths has not skyrocketed since the reopening of schools. There is an overall increase in the number of cases by ~100 over time (~4900 between June 30th and Aug 17th, and ~5000 between Aug 18th and Oct 4th), but as before, there are a number of other reasons this may be the case. For example, perhaps the increase in cases over time could instead be attributed to the colder weather moving in - one could maybe study these same data by region to figure out if this is the case. There was also an overall increase in the number of deaths by 5 over time (67 between June 30th and Aug 17th, and 72 between Aug 18th and Oct 4th). The fact that deaths are not directly rising with cases at a similar rate could potentially be explained by advances in the way that we treat COVID-19, including, but not limited to things like steroid treatment or anticoagulants. Finally, and very importantly, it’s important to note that this data represents only the counties in which school reopening data was available, and it may or may not be representative of the US on a broader scale.</p>
+<hr />
+</div>
+</div>
+<div id="correlation-matrix" class="section level3">
+<h3>Correlation Matrix</h3>
+<p>Here’s our first look at how masks may be associated with COVID-19 cases and deaths:</p>
+<pre class="r"><code># creating correlation matrix
+fulldatacormat &lt;- fulldata %&gt;% select_if(is.numeric) %&gt;% scale() %&gt;% 
+    cor(use = &quot;pair&quot;) %&gt;% as.data.frame() %&gt;% rownames_to_column(&quot;var1&quot;) %&gt;% 
+    pivot_longer(-1, names_to = &quot;var2&quot;, values_to = &quot;correlation&quot;)
+
+# plotting correlation matrix
+fulldatacormat %&gt;% ggplot(aes(x = factor(var1, levels = c(&quot;cases&quot;, 
+    &quot;casespercap&quot;, &quot;deaths&quot;, &quot;deathspercap&quot;, &quot;pop2019&quot;, &quot;always_mask&quot;, 
+    &quot;freq_mask&quot;, &quot;sometimes_mask&quot;, &quot;rarely_mask&quot;, &quot;never_mask&quot;)), 
+    y = factor(var2, levels = c(&quot;cases&quot;, &quot;casespercap&quot;, &quot;deaths&quot;, 
+        &quot;deathspercap&quot;, &quot;pop2019&quot;, &quot;always_mask&quot;, &quot;freq_mask&quot;, 
+        &quot;sometimes_mask&quot;, &quot;rarely_mask&quot;, &quot;never_mask&quot;)), fill = correlation)) + 
+    geom_tile() + scale_fill_gradient2(low = &quot;red&quot;, mid = &quot;white&quot;, 
+    high = &quot;blue&quot;) + geom_text(aes(label = round(correlation, 
+    2)), color = &quot;black&quot;, size = 2) + theme(axis.text.x = element_text(angle = 60, 
+    hjust = 1)) + coord_fixed() + labs(x = &quot;&quot;, y = &quot;&quot;, title = &quot;Correlation Matrix&quot;, 
+    subtitle = &quot;Data: numerics from fulldata&quot;) + theme(plot.title = element_text(face = &quot;bold&quot;, 
+    size = 10), plot.subtitle = element_text(size = 7))</code></pre>
+<p><img src="/project/project1_files/figure-html/unnamed-chunk-18-1.png" width="672" style="display: block; margin: auto;" />
+Based on this data, there’s little in the way of unexpected significant correlations:</p>
+<ul>
+<li><p><code>cases</code>/<code>casespercap</code> and <code>deaths</code>/<code>deathspercap</code> are strongly positively correlated, as expected.</p></li>
+<li><p><code>cases</code>/<code>deaths</code> and <code>casespercap</code>/<code>deathspercap</code> show only a very, very weak correlation, as expected (locations with larger populations will likely have higher case/death counts, but not necessarily higher cases/deaths per capita). This is also verified by the strong correlation between <code>pop2019</code> and <code>cases</code>/<code>deaths</code>, and the negligible correlation between <code>pop2019</code> and <code>casespercap</code>/<code>deathspercap</code>.</p></li>
+<li><p><code>always_mask</code> is moderately to strongly negatively correlated with <code>freq_mask</code>, <code>sometimes_mask</code>, <code>rarely_mask</code>, and <code>never_mask</code>, as expected.</p></li>
+</ul>
+<p>One standout is, very surprisingly, the mask data in relation to <code>cases</code>/<code>deaths</code> and <code>casespercap</code>/<code>deathspercap</code>:</p>
+<ul>
+<li><code>always_mask</code> appears to have a weak-low <em>positive</em> correlation with <code>cases</code>/<code>deaths</code> and <code>casespercap</code>/<code>deathspercap</code>, and vice versa for <code>freq_mask</code>, <code>sometimes_mask</code>, <code>rarely_mask</code>, and <code>never_mask</code>. This is completely unexpected as one would expect that if a greater proportion of the population always wears masks, there be lower counts of <code>cases</code>/<code>deaths</code> and <code>casespercap</code>/<code>deathspercap</code>.</li>
+</ul>
+<p>That being said, like before, there are many other variables that could have played a role in these results. For example, <code>always_mask</code> and <code>pop2019</code> also exhibit a low-moderate positive correlation, and the results could be due to the fact that COVID-19 is harder to contain in densely populated areas, despite prevalent mask wearing. It’s also important to note that the NY Times reported several states implementing mask mandates after the survey results were published and as such, the above data may no longer be an accurate representation of the masking situation in each county.</p>
+<hr />
+</div>
+<div id="pam-clustering" class="section level3">
+<h3>PAM Clustering</h3>
+<p>Let’s see if we can potentially visualize the interaction between masks and cases/deaths a little better via PAM clustering by <code>cases</code>, <code>deaths</code>, and <code>pop2019</code>.</p>
+<pre class="r"><code># step 1: selecting data no scale because selected columns
+# all measure counts of people
+clust_dat &lt;- fulldata %&gt;% # selecting data from only one day makes the clustering plot
+# easier to read may result in missing out on spikes/dips on
+# certain days will likely result in a less representative
+# sample
+filter(date == as.Date(&quot;2020-10-04&quot;)) %&gt;% select(cases, deaths, 
+    pop2019) %&gt;% distinct(cases, deaths, .keep_all = T)
+
+# step 2: creating silhouette plot to determine number of
+# clusters
+sil_width &lt;- vector()
+
+for (i in 2:10) {
+    pam_fit &lt;- pam(clust_dat, k = i)
+    sil_width[i] &lt;- pam_fit$silinfo$avg.width
+}
+
+ggplot() + geom_line(aes(x = 1:10, y = sil_width)) + scale_x_continuous(name = &quot;k&quot;, 
+    breaks = 1:10)</code></pre>
+<p><img src="/project/project1_files/figure-html/unnamed-chunk-19-1.png" width="672" style="display: block; margin: auto;" />
+The silhouette plot indicates that two clusters should be chosen.</p>
+<pre class="r"><code>#step 3: running PAM clustering analysis on 2 clusters
+pam1 &lt;- clust_dat %&gt;% 
+  pam(k=2)
+
+#step 4: visualizing clusters
+pamclust &lt;- clust_dat %&gt;% 
+  mutate(cluster=as.factor(pam1$clustering)) #save the cluster solution in dataset
+
+pamclust %&gt;%
+  left_join(fulldata) %&gt;% #join with original data
+  mutate(always_maskgreater = always_mask &gt; .7) %&gt;% 
+  ggplot(aes(cases, deaths, color = always_maskgreater, shape = cluster))+
+    geom_point()+
+    scale_x_log10()+
+    scale_y_log10()+
+    labs(color = &quot;always_mask &gt; 70%&quot;,
+         title = &quot;PAM&quot;,
+         subtitle = &quot;Clustered by: cases, deaths, population&quot;)+
+    theme(plot.title = element_text(face = &quot;bold&quot;))</code></pre>
+<p><img src="/project/project1_files/figure-html/unnamed-chunk-20-1.png" width="672" style="display: block; margin: auto;" />
+For the purposes of creating this plot, an <code>always_mask</code> proportion of greater than .7 was arbitrarily chosen as a relatively high proportion of always masking. The PAM clustering analysis appears to verify the correlations that we observed through the correlation matrix. Visually, the clusters do not appear to be very distinct, but it is clear that there are more blue triangles than dots, and more blue color as cases and deaths increase. This would in turn suggest that greater amounts of mask wearing actually correlates to greater counts of cases and deaths!</p>
+<p><strong>It is certainly worth mentioning that this data represents a small subset of the population and should most certainly NOT be taken as a recommendation to not mask up and/or follow the appropriate guidelines from health officials.</strong></p>
+<pre class="r"><code># step 5: interpreting silhouette plot
+plot(pam1, which = 2)</code></pre>
+<p><img src="/project/project1_files/figure-html/unnamed-chunk-21-1.png" width="672" style="display: block; margin: auto;" />
+For some reason, the plot isn’t displaying the bars. Regardless, because the average silhouette width is greater than .71 at .72, this plot indicates that a strong structure is found (strong goodness-of-fit), and as such, the clusters are sufficiently different between one another and similar within themselves.</p>
+<pre class="r"><code># separate visualization of the bars of silhouette plot
+pam1$silinfo$widths %&gt;% as.data.frame %&gt;% mutate(x = n():1) %&gt;% 
+    ggplot(aes(x, y = sil_width, fill = as.factor(cluster))) + 
+    geom_bar(stat = &quot;identity&quot;) + xlab(&quot;&quot;) + facet_grid(cluster ~ 
+    ., scales = &quot;free_y&quot;) + coord_flip() + theme(legend.position = &quot;none&quot;)</code></pre>
+<p><img src="/project/project1_files/figure-html/unnamed-chunk-22-1.png" width="672" style="display: block; margin: auto;" /></p>
+<hr />
+</div>
+<div id="links-to-datasets" class="section level3">
+<h3>Links to Datasets</h3>
+<ul>
+<li><p>COVID-19 by county: <a href="https://github.com/nytimes/covid-19-data/blob/63d02b9d1073eff62827daf155a4fe1ef4ab7188/us-counties.csv"><code>cvd_untidy</code></a></p></li>
+<li><p>K-12 school district reopening plans: <a href="https://www.edweek.org/ew/section/multimedia/school-districts-reopening-plans-a-snapshot.html"><code>kplan_untidy</code></a></p></li>
+<li><p>College reopening plans: <a href="https://docs.google.com/spreadsheets/d/10I8bVkLzvrmXJsb5N-8JSFpWw5vBwDKYzyOVAI4viKo/edit#gid=1514440859"><code>cplan_untidy</code></a></p></li>
+<li><p>K-12 location by county (2019 data): <a href="https://www.census.gov/programs-surveys/saipe/guidance-geographies/districts-counties.html"><code>kloc_untidy</code></a></p></li>
+<li><p>College location by county: <a href="https://public-us.opendatasoft.com/explore/dataset/us-colleges-and-universities/export/?sort=population"><code>cloc_untidy</code></a></p></li>
+<li><p>Mask use by county: <a href="https://github.com/nytimes/covid-19-data/commit/bde13b021e99c6b4a63fb66a6144e889cc635e31"><code>mask_untidy</code></a></p></li>
+<li><p>US population by county (US data): <a href="https://www.census.gov/data/datasets/time-series/demo/popest/2010s-counties-total.html"><code>countypop_untidy</code></a></p></li>
+<li><p>County fips codes: <a href="https://github.com/nytimes/covid-19-data/blob/63d02b9d1073eff62827daf155a4fe1ef4ab7188/co_fips.csv"><code>countyfips_untidy</code></a></p></li>
+</ul>
+<pre><code>## R version 4.0.3 (2020-10-10)
+## Platform: x86_64-apple-darwin17.0 (64-bit)
+## Running under: macOS Big Sur 10.16
+## 
+## Matrix products: default
+## BLAS:   /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRblas.dylib
+## LAPACK: /Library/Frameworks/R.framework/Versions/4.0/Resources/lib/libRlapack.dylib
+## 
+## locale:
+## [1] en_US.UTF-8/en_US.UTF-8/en_US.UTF-8/C/en_US.UTF-8/en_US.UTF-8
+## 
+## attached base packages:
+## [1] stats     graphics  grDevices utils     datasets  methods   base     
+## 
+## other attached packages:
+##  [1] cluster_2.1.0     scales_1.1.1      kableExtra_1.3.1  knitr_1.30       
+##  [5] lubridate_1.7.9.2 forcats_0.5.0     stringr_1.4.0     dplyr_1.0.2      
+##  [9] purrr_0.3.4       readr_1.4.0       tidyr_1.1.2       tibble_3.0.4     
+## [13] ggplot2_3.3.2     tidyverse_1.3.0  
+## 
+## loaded via a namespace (and not attached):
+##  [1] tidyselect_1.1.0   xfun_0.19          haven_2.3.1        colorspace_2.0-0  
+##  [5] vctrs_0.3.5        generics_0.1.0     htmltools_0.5.0    viridisLite_0.3.0 
+##  [9] yaml_2.2.1         utf8_1.1.4         rlang_0.4.9        pillar_1.4.7      
+## [13] glue_1.4.2         withr_2.3.0        DBI_1.1.0          RColorBrewer_1.1-2
+## [17] dbplyr_2.0.0       modelr_0.1.8       readxl_1.3.1       lifecycle_0.2.0   
+## [21] munsell_0.5.0      blogdown_0.20      gtable_0.3.0       cellranger_1.1.0  
+## [25] rvest_0.3.6        evaluate_0.14      labeling_0.4.2     fansi_0.4.1       
+## [29] highr_0.8          broom_0.7.2        Rcpp_1.0.5         backports_1.2.0   
+## [33] formatR_1.7        webshot_0.5.2      jsonlite_1.7.1     farver_2.0.3      
+## [37] fs_1.5.0           hms_0.5.3          digest_0.6.27      stringi_1.5.3     
+## [41] bookdown_0.21      grid_4.0.3         cli_2.2.0          tools_4.0.3       
+## [45] magrittr_2.0.1     crayon_1.3.4       pkgconfig_2.0.3    ellipsis_0.3.1    
+## [49] xml2_1.3.2         reprex_0.3.0       assertthat_0.2.1   rmarkdown_2.5     
+## [53] httr_1.4.2         rstudioapi_0.13    R6_2.5.0           compiler_4.0.3</code></pre>
+<pre><code>## [1] &quot;2021-06-02 12:50:44 CDT&quot;</code></pre>
+<pre><code>##                                                                                           sysname 
+##                                                                                          &quot;Darwin&quot; 
+##                                                                                           release 
+##                                                                                          &quot;20.3.0&quot; 
+##                                                                                           version 
+## &quot;Darwin Kernel Version 20.3.0: Thu Jan 21 00:07:06 PST 2021; root:xnu-7195.81.3~1/RELEASE_X86_64&quot; 
+##                                                                                          nodename 
+##                                                       &quot;wireless-10-145-114-228.public.utexas.edu&quot; 
+##                                                                                           machine 
+##                                                                                          &quot;x86_64&quot; 
+##                                                                                             login 
+##                                                                                            &quot;root&quot; 
+##                                                                                              user 
+##                                                                                           &quot;Bowen&quot; 
+##                                                                                    effective_user 
+##                                                                                           &quot;Bowen&quot;</code></pre>
+</div>
