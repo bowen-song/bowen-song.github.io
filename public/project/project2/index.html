@@ -8,7 +8,7 @@
     
     <link rel="shortcut icon" type="image/x-icon" href="/img/favicon.ico">
     <title>Project 2: Modeling, Testing, and Predicting</title>
-    <meta name="generator" content="Hugo 0.83.1" />
+    <meta name="generator" content="Hugo 0.79.0" />
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
     <link rel="stylesheet" type="text/css" href="/css/main.css" />
     <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
@@ -601,7 +601,7 @@ coeftest(linearfit, vcov = vcovHC(linearfit))[, 1:2]</code></pre>
 <pre class="r"><code># estimated SEs by resampling rows
 row_resample %&gt;% t %&gt;% as.data.frame %&gt;% summarize_all(sd)</code></pre>
 <pre><code>##   (Intercept) trumpwin     unemp_c trumpwin:unemp_c
-## 1    15.63698 16.53965 0.004248731      0.006389592</code></pre>
+## 1    15.37045 16.32481 0.004120472      0.006183857</code></pre>
 <p>After re-running the linear regression with bootstrapped standard errors (determined by resampling rows), the <code>(Intercept)</code> and <code>unemp</code>loyment estimates remain significant, but we cannot conclusively say whether <code>trumpwin</code> and the interaction between <code>trumpwin</code> and <code>unemp</code> are significant based on our bootstrapped model.</p>
 <p>As a rule, smaller standard errors result in smaller p-values/larger t-values and larger standard errors result in larger p-values/smaller t-values. With that in mind, we can make the following comparisons:</p>
 <ul>
@@ -889,8 +889,8 @@ for (i in 1:k) {
 
 # finding average classification diagnostics out-of-sample
 summarize_all(fd2diags, mean)</code></pre>
-<pre><code>##         acc      sens     spec      ppv        f1       auc
-## 1 0.8971943 0.9673831 0.556045 0.913951 0.9397781 0.9145743</code></pre>
+<pre><code>##         acc      sens      spec       ppv        f1       auc
+## 1 0.8984836 0.9693726 0.5528735 0.9139296 0.9406603 0.9160466</code></pre>
 <p><em>These classification diagnostics show how the previous model may predict observations out of sample. Across all diagnostics, the model is slightly worse at predicting out-of-sample, but not by a significant margin. Notably, the AUC only decreases from .923 to .916.</em></p>
 <ul>
 <li><p><strong>Accuracy</strong>: Out of sample, this model has an accuracy of .898, meaning 89.8% of its predictions were correct. (in sample: .901)</p>
@@ -994,8 +994,8 @@ for (i in 1:k) {
 
 # summarizing results
 summarize_all(lassodiags, mean)</code></pre>
-<pre><code>##         acc      sens      spec       ppv        f1       auc
-## 1 0.8959205 0.9667581 0.5465455 0.9132172 0.9391049 0.9142393</code></pre>
+<pre><code>##         acc      sens      spec       ppv        f1      auc
+## 1 0.8965398 0.9667179 0.5610574 0.9136639 0.9392221 0.915796</code></pre>
 <p><em>These classification diagnostics are pretty interesting. Across all diagnostics, the model is slightly worse the original logistic regression at predicting both in- and out-of-sample, but not by a significant margin. Theoretically, because of its more conservative estimate, the LASSO model should result in improved out-of-sample predictions compared to that of the full model; while this is indeed the case here, the improvement is only marginal. Notably, when compared to the out-of-sample AUC of the full model, this AUC only improves from .9156 to .9158.</em></p>
 <ul>
 <li><p><strong>Accuracy</strong>: The LASSO model has an accuracy of .8956 out of sample, meaning 89.56% of its predictions were correct. This is lower than that of both the in- and out-of-sample full model predictions, which had accuracies of .901 and .898, respectively.</p>
@@ -1070,7 +1070,7 @@ summarize_all(lassodiags, mean)</code></pre>
 ## [61] abind_1.4-5       DBI_1.1.0         curl_4.3          R6_2.5.0         
 ## [65] utf8_1.1.4        shape_1.4.5       stringi_1.5.3     Rcpp_1.0.5       
 ## [69] vctrs_0.3.5       dbplyr_2.0.0      tidyselect_1.1.0  xfun_0.19</code></pre>
-<pre><code>## [1] &quot;2021-06-02 12:51:36 CDT&quot;</code></pre>
+<pre><code>## [1] &quot;2021-06-03 23:06:09 CDT&quot;</code></pre>
 <pre><code>##                                                                                           sysname 
 ##                                                                                          &quot;Darwin&quot; 
 ##                                                                                           release 
@@ -1078,7 +1078,7 @@ summarize_all(lassodiags, mean)</code></pre>
 ##                                                                                           version 
 ## &quot;Darwin Kernel Version 20.3.0: Thu Jan 21 00:07:06 PST 2021; root:xnu-7195.81.3~1/RELEASE_X86_64&quot; 
 ##                                                                                          nodename 
-##                                                       &quot;wireless-10-145-114-228.public.utexas.edu&quot; 
+##                                                                        &quot;Bowens-MacBook-Pro.local&quot; 
 ##                                                                                           machine 
 ##                                                                                          &quot;x86_64&quot; 
 ##                                                                                             login 
