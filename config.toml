@@ -13,7 +13,7 @@ theme = "hugo-sustain"
 [params]
   avatar = "Bowen Song Profile Picture.jpg"
   author = "Bowen Song"
-  occupation = "incoming medical student at McGovern Medical School"
+  occupation = "MS1 at McGovern Medical School"
   about = "Welcome to my website! Over the past several months, I've learned a lot about data science using R and python. This website showcases some of what I've learned, all in one place!"
 
   # Custom assets can be linked with their paths relative to static/
